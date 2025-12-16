@@ -63,11 +63,14 @@
 import AppLayout from '@/layout/AppLayout.vue';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import LoaderModal from '@/components/LoaderModal.vue';
-import { ref } from 'vue';
+import { ref, onBeforeMount } from 'vue';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 import { postData } from '@/services/api.ts';
 import { VForm } from 'vuetify/components';
+import { useAuthStore } from '@/stores/authStore';
+import { storeToRefs } from 'pinia';
+import type { LoginResponse } from '@/types/authTypes.ts';
 
 const valid = ref<boolean>(false);
 const email = ref<string>('');
@@ -78,6 +81,8 @@ const errorMessages = ref<string>('');
 const loading = ref<boolean>(false);
 const form = ref<VForm | null>(null);
 const router = useRouter();
+const authStore = useAuthStore();
+const { isAuthenticated } = storeToRefs(authStore);
 
 const handleShowPassword = () => {
   showPassword.value = !showPassword.value;
@@ -109,13 +114,12 @@ const login = async (): Promise<void> => {
     password: password.value,
   };
 
-  postData('/auth/login', userData)
+  postData<LoginResponse>('/auth/login', userData)
     .then((response) => {
-      console.log('Inicio de sesión exitoso:', response);
+      authStore.login(response.data.token);
       router.push('/');
     })
     .catch((error) => {
-      console.error('Error en el inicio de sesión:', error);
       snackbar.value = true;
       errorMessages.value = error.response.data.errors[0];
     })
@@ -124,9 +128,15 @@ const login = async (): Promise<void> => {
     });
 }
 
-const loginWithGoogle = () => {
+const loginWithGoogle = (): void => {
   window.location.href = 'http://localhost:8000/api/auth/google/redirect'
 }
+
+onBeforeMount(() => {
+  if (isAuthenticated.value) {
+    router.push('/');
+  }
+});
 
 </script>
 <style scoped>

@@ -35,7 +35,7 @@
         <nav-link to="/about" label="Contacto" />
       </div>
 
-      <div class="hidden md:flex md:order-3">
+      <div class="hidden md:flex md:order-3" v-if="!isAuthenticated">
         <div class="flex gap-1 px-2">
           <v-btn variant="flat" color="primary" @click="$router.push('/login')">
             Iniciar Sesión
@@ -45,10 +45,21 @@
           </v-btn>
         </div>
       </div>
+      <div v-else class="hidden md:flex md:order-3">
+        <v-btn icon variant="text" aria-label="Carrito" color="black">
+          <ShoppingBag :size="20" />
+        </v-btn>
+        <v-btn icon variant="text" aria-label="Me gustas" color="black">
+          <Heart :size="20" />
+        </v-btn>
+        <v-btn icon variant="text" aria-label="Cuenta" color="black">
+          <User :size="20" />
+        </v-btn>
+      </div>
 
       <div class="order-3 md:hidden">
         <v-btn icon variant="text" aria-label="Cuenta" color="black">
-          <User :size="28" />
+          <User :size="20" />
         </v-btn>
       </div>
     </div>
@@ -58,7 +69,14 @@
 <script lang="ts" setup>
 
 import NavLink from '@/components/NavLink.vue';
-import { User, Menu } from 'lucide-vue-next';
+import { User, Menu, ShoppingBag, Heart } from 'lucide-vue-next';
+import { useAuthStore } from '@/stores/authStore';
+import { storeToRefs } from 'pinia';
+
+const authStore = useAuthStore();
+const { isAuthenticated, user } = storeToRefs(authStore);
+
+console.log('Usuario en TopNavbar:', user.value);
 
 </script>
 <style scoped>

@@ -8,27 +8,25 @@ const api = axios.create({
   },
 })
 
-interface AuthToken{
+interface AuthToken {
   token: string
   expiresIn: number
 }
 
 export type { AuthToken }
 
-interface ApiResponse {
-  data: Record<string, unknown>
+export interface ApiResponse<T = unknown> {
+  data: T
   message: string
-  errors: Array<string>
+  errors: string[]
 }
-
-export type { ApiResponse }
 
 export const getData = async <T>(
   endpoint: string,
   params?: Record<string, unknown>,
-): Promise<T> => {
+): Promise<ApiResponse<T>> => {
   try {
-    const response: AxiosResponse<T> = await api.get(endpoint, { params })
+    const response: AxiosResponse<ApiResponse<T>> = await api.get(endpoint, { params })
     return response.data
   } catch (error) {
     console.error('Error fetching data:', error)
@@ -36,17 +34,9 @@ export const getData = async <T>(
   }
 }
 
-export const postData = async <T>(
-  endpoint: string,
-  data: T,
-): Promise<T> => {
-  try {
-    const response: AxiosResponse<T> = await api.post(endpoint, data)
-    return response.data
-  } catch (error) {
-    console.error('Error posting data:', error)
-    throw error
-  }
+export const postData = async <T>(endpoint: string, data: unknown): Promise<ApiResponse<T>> => {
+  const response: AxiosResponse<ApiResponse<T>> = await api.post(endpoint, data)
+  return response.data
 }
 
 export default api

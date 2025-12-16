@@ -5,15 +5,17 @@
 
 import { onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/authStore';
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 
 onMounted(() => {
   const token = route.query.token as string
 
   if (token) {
-    console.log('Authentication successful. Token:', token);
+    authStore.login(token)
     router.push('/')
   } else {
     router.push('/auth-error')
