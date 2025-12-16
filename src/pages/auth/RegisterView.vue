@@ -82,12 +82,14 @@
 
 import AppLayout from '@/layout/AppLayout.vue';
 import LoaderModal from '@/components/LoaderModal.vue';
-import { ref } from 'vue';
+import { ref, onBeforeMount } from 'vue';
 import { User, Mail, Lock, Eye, EyeOff } from 'lucide-vue-next';
 import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import { postData } from '@/services/api.ts';
 import { VForm } from 'vuetify/components';
 import router from '@/router';
+import { useAuthStore } from '@/stores/authStore';
+import { storeToRefs } from 'pinia';
 
 const valid = ref<boolean>(false);
 
@@ -98,6 +100,9 @@ const confirmPassword = ref<string>('');
 
 const showPassword = ref<boolean>(false);
 const showConfirmPassword = ref<boolean>(false);
+
+const authStore = useAuthStore();
+const { isAuthenticated } = storeToRefs(authStore);
 
 const handleShowPassword = () => {
   showPassword.value = !showPassword.value;
@@ -167,6 +172,12 @@ const handleSnackbarClose = () => {
 const registerWithGoogle = () => {
   window.location.href = 'http://localhost:8000/api/auth/google/redirect'
 }
+
+onBeforeMount(() => {
+  if (isAuthenticated.value) {
+    router.push('/');
+  }
+});
 
 </script>
 

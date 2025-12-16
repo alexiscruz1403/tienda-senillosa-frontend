@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import RegisterView from '@/pages/RegisterView.vue'
-import LoginView from '@/pages/LoginView.vue'
-import AuthCallback from '@/pages/AuthCallback.vue'
-import AuthError from '@/pages/AuthError.vue'
+import RegisterView from '@/pages/auth/RegisterView.vue'
+import LoginView from '@/pages/auth/LoginView.vue'
+import AuthCallback from '@/pages/auth/AuthCallback.vue'
+import AuthError from '@/pages/auth/AuthError.vue'
+import HomeView from '@/pages/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,6 +28,11 @@ const router = createRouter({
       name: 'auth-error',
       component: AuthError,
     },
+    {
+      path: '/',
+      name: 'home',
+      component: HomeView,
+    }
   ],
 })
 
