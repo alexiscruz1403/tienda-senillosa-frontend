@@ -3,18 +3,12 @@
     <div class="bg-[#f4f6fb] w-screen min-h-screen flex items-center justify-center py-6">
       <div class="bg-white px-6 py-6 rounded-lg shadow-lg">
         <div class="flex flex-col gap-2">
-          <h1 class="text-3xl font-bold text-center">Crear cuenta</h1>
-          <p class="text-[#65758B] text-center">Únete a Tienda Senillosa hoy</p>
+          <h1 class="text-3xl font-bold text-center">Iniciar sesión</h1>
+          <p class="text-[#65758B] text-center">Ingresa tu cuenta para continuar</p>
         </div>
-        <v-form v-model="valid" ref="form" validate-on="submit" @submit.prevent="register" :hide-details="!valid"
+        <v-form v-model="valid" ref="form" validate-on="submit" @submit.prevent="login" :hide-details="!valid"
           class="w-full md:w-98">
           <v-container class="flex flex-col gap-3">
-            <v-text-field v-model="username" :counter="100" :rules="usernameRules" label="Nombre de usuario" required
-              variant="outlined" color="accent-main" bg-color="bg-primary">
-              <template #prepend-inner>
-                <User :size="18" class="text-primary" />
-              </template>
-            </v-text-field>
             <v-text-field v-model="email" :rules="emailRules" label="Correo electrónico" required variant="outlined"
               color="accent-main" bg-color="bg-primary">
               <template #prepend-inner>
@@ -32,36 +26,23 @@
                 <EyeOff :size="18" v-else class="text-primary cursor-pointer" @click="handleShowPassword" />
               </template>
             </v-text-field>
-            <v-text-field v-model="confirmPassword" :rules="confirmPasswordRules"
-              :type="showConfirmPassword ? 'text' : 'password'" hint="Por lo menos 8 caracteres" variant="outlined"
-              color="accent-main" bg-color="bg-primary" label="Confirmar contraseña" name="confirmPassword" counter
-              @click:append="handleShowConfirmPassword">
-              <template #prepend-inner>
-                <Lock :size="18" class="text-primary" />
-              </template>
-              <template #append>
-                <Eye :size="18" v-if="!showConfirmPassword" class="text-primary cursor-pointer"
-                  @click="handleShowConfirmPassword" />
-                <EyeOff :size="18" v-else class="text-primary cursor-pointer" @click="handleShowConfirmPassword" />
-              </template>
-            </v-text-field>
-            <v-btn color="primary" class="mt-1" block type="submit">Registrarse</v-btn>
+            <v-btn color="primary" class="mt-1" block type="submit">Iniciar sesión</v-btn>
           </v-container>
         </v-form>
         <v-divider color="text-muted" thickness="1">
           <p class="text-[#65758B] text-sm">o continuar con</p>
         </v-divider>
 
-        <v-btn color="secondary" class="mt-4 custom-hover" block @click="registerWithGoogle">
+        <v-btn color="secondary" class="mt-4 custom-hover" block @click="loginWithGoogle">
           <GoogleIcon class="mr-2" />
           <p class="font-bold">Google</p>
         </v-btn>
 
         <v-container class="mt-4">
           <p class="text-sm text-center text-[#65758B]">
-            ¿Ya tienes una cuenta?
-            <a href="/login" class="text-accent-main font-semibold hover:underline"
-              @click.prevent="router.push('/login')">Iniciar sesión</a>
+            ¿No tenes cuenta?
+            <a href="/register" class="text-accent-main font-semibold hover:underline"
+              @click.prevent="router.push('/register')">Crear cuenta</a>
           </p>
         </v-container>
       </div>
@@ -77,40 +58,34 @@
     <loader-modal :display="loading" message="Registrando usuario, por favor espere..." />
   </app-layout>
 </template>
-
-<script lang="ts" setup>
+<script setup lang="ts">
 
 import AppLayout from '@/layout/AppLayout.vue';
+import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 import LoaderModal from '@/components/LoaderModal.vue';
 import { ref } from 'vue';
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-vue-next';
-import GoogleIcon from '@/components/icons/GoogleIcon.vue';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
 import { postData } from '@/services/api.ts';
 import { VForm } from 'vuetify/components';
-import router from '@/router';
 
 const valid = ref<boolean>(false);
-
-const username = ref<string>('');
 const email = ref<string>('');
 const password = ref<string>('');
-const confirmPassword = ref<string>('');
-
 const showPassword = ref<boolean>(false);
-const showConfirmPassword = ref<boolean>(false);
+const snackbar = ref<boolean>(false);
+const errorMessages = ref<string>('');
+const loading = ref<boolean>(false);
+const form = ref<VForm | null>(null);
+const router = useRouter();
 
 const handleShowPassword = () => {
   showPassword.value = !showPassword.value;
 }
 
-const handleShowConfirmPassword = () => {
-  showConfirmPassword.value = !showConfirmPassword.value;
+const handleSnackbarClose = () => {
+  snackbar.value = false;
 }
-
-const usernameRules = [
-  (v: string) => !!v || 'El nombre de usuario es obligatorio',
-  (v: string) => (v && v.length <= 100) || 'El nombre de usuario debe tener menos de 100 caracteres',
-];
 
 const emailRules = [
   (v: string) => !!v || 'El correo electrónico es obligatorio',
@@ -122,17 +97,7 @@ const passwordRules = [
   (v: string) => (v && v.length >= 8) || 'La contraseña debe tener al menos 8 caracteres',
 ];
 
-const confirmPasswordRules = [
-  (v: string) => !!v || 'La confirmación de la contraseña es obligatoria',
-  (v: string) => v === password.value || 'Las contraseñas no coinciden',
-];
-
-const loading = ref<boolean>(false);
-const errorMessages = ref<string[]>([]);
-const snackbar = ref<boolean>(false);
-const form = ref<VForm | null>(null)
-
-const register = async (): Promise<void> => {
+const login = async (): Promise<void> => {
   const { valid: isValid } = await form.value!.validate();
 
   if (!isValid) return;
@@ -140,18 +105,17 @@ const register = async (): Promise<void> => {
   loading.value = true;
 
   const userData = {
-    username: username.value,
     email: email.value,
     password: password.value,
   };
 
-  postData('/auth/register', userData)
+  postData('/auth/login', userData)
     .then((response) => {
-      console.log('Registro exitoso:', response);
+      console.log('Inicio de sesión exitoso:', response);
       router.push('/');
     })
     .catch((error) => {
-      console.error('Error en el registro:', error);
+      console.error('Error en el inicio de sesión:', error);
       snackbar.value = true;
       errorMessages.value = error.response.data.errors[0];
     })
@@ -160,16 +124,11 @@ const register = async (): Promise<void> => {
     });
 }
 
-const handleSnackbarClose = () => {
-  snackbar.value = false;
-}
-
-const registerWithGoogle = () => {
+const loginWithGoogle = () => {
   window.location.href = 'http://localhost:8000/api/auth/google/redirect'
 }
 
 </script>
-
 <style scoped>
 .custom-hover:hover {
   background-color: #3c83f6 !important;
