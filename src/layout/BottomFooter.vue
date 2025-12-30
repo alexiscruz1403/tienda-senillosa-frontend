@@ -1,6 +1,6 @@
 <template>
-  <v-footer color="primary">
-    <v-col class="flex flex-col gap-4" align-self="start">
+  <div class="bg-[#0F172A] text-white px-8 py-8 flex flex-col gap-8 md:flex-row md:justify-between md:gap-0">
+    <div class="w-full flex flex-col gap-4">
       <div class="flex flex-col gap-4">
         <p class="text-3xl">Logo</p>
         <p class="text-sm text-[#F8FAFCB2]">Tu destino para streetwear y moda urbana. Encuentra las últimas tendencias y
@@ -18,15 +18,15 @@
           <tik-tok-icon></tik-tok-icon>
         </v-btn>
       </div>
-    </v-col>
-    <v-col class="flex flex-col gap-4" align-self="start">
+    </div>
+    <div class="w-full flex flex-col gap-4">
       <h3 class="font-bold text-xl">Enlaces Rápidos</h3>
       <div class="flex flex-col gap-2">
         <a href="#" class="text-sm text-[#F8FAFCB2] hover:underline">Seguí tu pedido</a>
         <a href="#" class="text-sm text-[#F8FAFCB2] hover:underline">Pedí el reembolso</a>
       </div>
-    </v-col>
-    <v-col class="flex flex-col gap-4" align-self="start">
+    </div>
+    <div class="w-full flex flex-col gap-4">
       <h3 class="font-bold text-xl">Contacto</h3>
       <div class="flex flex-col gap-3">
         <div class="flex gap-2 items-center">
@@ -42,8 +42,8 @@
           <p class="text-sm text-[#F8FAFCB2]">Email: contacto@tiendasenillosa.com</p>
         </div>
       </div>
-    </v-col>
-  </v-footer>
+    </div>
+  </div>
 </template>
 <script lang="ts" setup>
 

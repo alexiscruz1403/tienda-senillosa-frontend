@@ -26,6 +26,10 @@ export const getData = async <T>(
   params?: Record<string, unknown>,
 ): Promise<ApiResponse<T>> => {
   try {
+    const token = localStorage.getItem('authToken')
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    }
     const response: AxiosResponse<ApiResponse<T>> = await api.get(endpoint, { params })
     return response.data
   } catch (error) {
@@ -35,6 +39,11 @@ export const getData = async <T>(
 }
 
 export const postData = async <T>(endpoint: string, data: unknown): Promise<ApiResponse<T>> => {
+  const token = localStorage.getItem('authToken')
+  console.log('Using token:', token)
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+  }
   const response: AxiosResponse<ApiResponse<T>> = await api.post(endpoint, data)
   return response.data
 }
