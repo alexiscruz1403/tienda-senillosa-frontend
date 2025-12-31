@@ -1,6 +1,6 @@
 <template>
   <div class="relative shadow-md hover:shadow-lg transition-shadow bg-white rounded-lg overflow-hidden">
-    <div class="h-96 bg-white relative group">
+    <div class="h-96 bg-white relative group" @click="handleCardClick">
       <img :src="props.imageUrl" :alt="props.name" class="w-full h-full object-cover cursor-pointer" />
       <div class="flex flex-col gap-2 max-w-max absolute top-2 left-2">
         <v-chip v-if="isNew" color="info" variant="flat" size="small">NUEVO</v-chip>
@@ -13,7 +13,8 @@
         </div>
       </button>
       <v-btn
-        class="opacity-0! group-hover:opacity-100! transition-opacity duration-300 absolute bottom-12 left-1/2 -translate-x-1/2">
+        class="opacity-0! group-hover:opacity-100! transition-opacity duration-300 absolute bottom-12 left-1/2 -translate-x-1/2"
+        @click.stop="handleCardClick">
         <div class="flex gap-2">
           <ShoppingBag :size="16" />
           <p>Ver producto</p>
@@ -32,8 +33,8 @@
 </template>
 <script setup lang="ts">
 
-import { computed } from 'vue';
-import { defineEmits } from 'vue';
+import { computed, defineEmits } from 'vue';
+import router from '@/router';
 
 const props = defineProps({
   product_id: {
@@ -108,5 +109,9 @@ const emit = defineEmits<{
 const handleLikeClick = () => {
   emit('like', props.product_id);
 };
+
+const handleCardClick = () => {
+  router.push(`/products/${props.product_id}`);
+}
 
 </script>

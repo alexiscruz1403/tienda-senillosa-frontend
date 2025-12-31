@@ -147,7 +147,8 @@ import { ref, onMounted, watch } from 'vue';
 import AppLayout from '@/layout/AppLayout.vue';
 import ProductCard from '@/components/ProductCard.vue';
 import { ChevronLeft, ChevronRight, ArrowRight, Truck, Sparkles, Shield, RefreshCcw } from 'lucide-vue-next';
-import { postData, getData } from '@/services/api';
+import { getData } from '@/services/api';
+import { likeProduct } from '@/services/likeService';
 import type { PublicProduct } from '@/types/ProductTypes';
 import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
@@ -208,7 +209,7 @@ const handleLikeClick = (productId: number) => {
     return product;
   });
 
-  postData(`/products/${productId}/like`, {})
+  likeProduct(productId)
     .then(() => {
       // Successfully liked/unliked the product
     })
