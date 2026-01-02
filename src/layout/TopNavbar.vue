@@ -1,5 +1,5 @@
 <template>
-  <v-app-bar :elevation="0" class="fixed top-0 left-0 right-0 z-50 app-bar-glass border-b border-border">
+  <v-app-bar :elevation="0" class="fixed top-0 left-0 right-0 z-40! app-bar-glass border-b border-border">
     <div class="flex justify-between items-center w-full px-6">
       <div class="flex gap-2 order-2 md:order-1">
         <p class="text-3xl cursor-pointer" @click="$router.push('/')">Logo</p>
@@ -74,9 +74,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
 
 const authStore = useAuthStore();
-const { isAuthenticated, user } = storeToRefs(authStore);
-
-console.log('Usuario en TopNavbar:', user.value);
+const { isAuthenticated } = storeToRefs(authStore);
 
 </script>
 <style scoped>

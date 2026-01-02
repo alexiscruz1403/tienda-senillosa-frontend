@@ -13,5 +13,22 @@ export interface PublicProduct {
   created_at: string
   stocks: PublicStock[]
   images: PublicImage[]
+  orders: number
   is_liked: boolean
+}
+
+export interface PublicProductPaginated {
+  data: PublicProduct[]
+  links: {
+    self: string
+    prev: string | null
+    next: string | null
+  }
+  meta: {
+    total: number
+    count: number
+    per_page: number
+    current_page: number
+    total_pages: number
+  }
 }

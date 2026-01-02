@@ -1,6 +1,6 @@
 <template>
-  <div class="relative shadow-md hover:shadow-lg transition-shadow bg-white rounded-lg overflow-hidden">
-    <div class="h-96 bg-white relative group" @click="handleCardClick">
+  <div class="max-h-max relative shadow-md hover:shadow-lg transition-shadow bg-white rounded-lg overflow-hidden">
+    <div class="h-58 md:h-72 lg:h-80 bg-white relative group" @click="handleCardClick">
       <img :src="props.imageUrl" :alt="props.name" class="w-full h-full object-cover cursor-pointer" />
       <div class="flex flex-col gap-2 max-w-max absolute top-2 left-2">
         <v-chip v-if="isNew" color="info" variant="flat" size="small">NUEVO</v-chip>

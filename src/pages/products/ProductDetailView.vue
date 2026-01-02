@@ -108,13 +108,13 @@
 
       <section class="px-4 flex flex-col gap-4 mt-4">
         <h2 class="text-2xl md:text-3xl font-semibold">Productos <span class="text-[#3C83F6]">Similares</span></h2>
-        <div class="grid grid-cols-1 gap-y-4 md:grid-cols-2 lg:grid-cols-4" ref="productsCarousel"
+        <div class="grid grid-cols-2 gap-y-4 md:grid-cols-3 lg:grid-cols-4" ref="productsCarousel"
           v-if="loadingRelated">
           <div class="px-2" v-for="n in 4" :key="n">
             <v-skeleton-loader type="image, list-item-three-line" class="w-full h-96 flex items-start!" />
           </div>
         </div>
-        <div class="grid grid-cols-1 gap-y-4 md:grid-cols-2 lg:grid-cols-4" ref="productsCarousel" v-else>
+        <div class="grid grid-cols-2 gap-y-4 md:grid-cols-3 lg:grid-cols-4" ref="productsCarousel" v-else>
           <div class="px-2" v-for="product in relatedProducts" :key="product.product_id">
             <ProductCard :product_id="product.product_id" :name="product.name" :brand="product.brand"
               :price="product.price"
