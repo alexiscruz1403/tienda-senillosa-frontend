@@ -24,13 +24,14 @@ export interface ApiResponse<T = unknown> {
 export const getData = async <T>(
   endpoint: string,
   params?: Record<string, unknown>,
+  config?: Record<string, unknown>,
 ): Promise<ApiResponse<T>> => {
   try {
     const token = localStorage.getItem('authToken')
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`
     }
-    const response: AxiosResponse<ApiResponse<T>> = await api.get(endpoint, { params })
+    const response: AxiosResponse<ApiResponse<T>> = await api.get(endpoint, { params, ...config })
     return response.data
   } catch (error) {
     console.error('Error fetching data:', error)
