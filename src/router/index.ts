@@ -6,6 +6,7 @@ import AuthError from '@/pages/auth/AuthError.vue'
 import HomeView from '@/pages/HomeView.vue'
 import ProductDetailView from '@/pages/products/ProductDetailView.vue'
 import CatalogView from '@/pages/products/CatalogView.vue'
+import LikesView from '@/pages/products/LikesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -44,6 +45,11 @@ const router = createRouter({
       path: '/products',
       name: 'catalog',
       component: CatalogView,
+    },
+    {
+      path: '/likes',
+      name: 'likes',
+      component: LikesView,
     },
   ],
 })

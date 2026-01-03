@@ -49,7 +49,7 @@
         <v-btn icon variant="text" aria-label="Carrito" color="black">
           <ShoppingBag :size="20" />
         </v-btn>
-        <v-btn icon variant="text" aria-label="Me gustas" color="black">
+        <v-btn icon variant="text" aria-label="Me gustas" color="black" @click="handleLikesClick">
           <Heart :size="20" />
         </v-btn>
         <v-btn icon variant="text" aria-label="Cuenta" color="black">
@@ -72,9 +72,14 @@ import NavLink from '@/components/NavLink.vue';
 import { User, Menu, ShoppingBag, Heart } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { storeToRefs } from 'pinia';
+import router from '@/router';
 
 const authStore = useAuthStore();
 const { isAuthenticated } = storeToRefs(authStore);
+
+const handleLikesClick = () => {
+  router.push('/likes');
+};
 
 </script>
 <style scoped>
