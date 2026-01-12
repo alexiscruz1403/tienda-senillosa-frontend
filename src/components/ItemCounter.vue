@@ -2,13 +2,13 @@
   <div class="flex flex-col gap-1">
     <div class="flex items-center gap-2 border border-gray-300 rounded-lg w-max p-2">
       <button
-        class="size-12 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-200! transition-colors duration-200"
+        class="size-10 md:size-12 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-200! transition-colors duration-200"
         :disabled="props.modelValue <= props.min" @click="handleButtonClick(props.modelValue - 1)">
         <Minus :size="18" />
       </button>
-      <span class="w-10 text-center">{{ props.modelValue }}</span>
+      <span class="w-6 md:w-10 text-center">{{ props.modelValue }}</span>
       <button
-        class="size-12 flex items-center justify-center cursor-pointer hover:bg-gray-200! transition-colors duration-200"
+        class="size-10 md:size-12 flex items-center justify-center cursor-pointer hover:bg-gray-200! transition-colors duration-200"
         :disabled="props.modelValue >= props.max" @click="handleButtonClick(props.modelValue + 1)">
         <Plus :size="18" />
       </button>

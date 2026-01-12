@@ -41,11 +41,19 @@ export const getData = async <T>(
 
 export const postData = async <T>(endpoint: string, data: unknown): Promise<ApiResponse<T>> => {
   const token = localStorage.getItem('authToken')
-  console.log('Using token:', token)
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
   }
   const response: AxiosResponse<ApiResponse<T>> = await api.post(endpoint, data)
+  return response.data
+}
+
+export const putData = async <T>(endpoint: string, data: unknown): Promise<ApiResponse<T>> => {
+  const token = localStorage.getItem('authToken')
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+  }
+  const response: AxiosResponse<ApiResponse<T>> = await api.put(endpoint, data)
   return response.data
 }
 
