@@ -1,5 +1,8 @@
 <template>
-  <v-app-bar :elevation="0" class="fixed top-0 left-0 right-0 z-40! app-bar-glass border-b border-border">
+  <v-app-bar
+    :elevation="0"
+    class="fixed top-0 left-0 right-0 z-40! app-bar-glass border-b border-border"
+  >
     <div class="flex justify-between items-center w-full px-6">
       <div class="flex gap-2 order-2 md:order-1">
         <p class="text-3xl cursor-pointer" @click="$router.push('/')">Logo</p>
@@ -46,8 +49,21 @@
         </div>
       </div>
       <div v-else class="hidden md:flex md:order-3">
-        <v-btn icon variant="text" aria-label="Carrito" color="black">
+        <v-btn
+          icon
+          variant="text"
+          aria-label="Carrito"
+          color="black"
+          @click="handleCartClick"
+          class="relative"
+        >
           <ShoppingBag :size="20" />
+          <span
+            class="absolute top-0 right-0 bg-[#3C83F6] w-4 h-4 rounded-full text-white text-xs text-center font-semibold"
+            aria-hidden="true"
+            v-if="itemCount != 0"
+            >{{ itemCount }}</span
+          >
         </v-btn>
         <v-btn icon variant="text" aria-label="Me gustas" color="black" @click="handleLikesClick">
           <Heart :size="20" />
@@ -67,20 +83,26 @@
 </template>
 
 <script lang="ts" setup>
+import NavLink from '@/components/NavLink.vue'
+import { User, Menu, ShoppingBag, Heart } from 'lucide-vue-next'
+import { useAuthStore } from '@/stores/authStore'
+import { useCartStore } from '@/stores/cartStore'
+import { storeToRefs } from 'pinia'
+import router from '@/router'
 
-import NavLink from '@/components/NavLink.vue';
-import { User, Menu, ShoppingBag, Heart } from 'lucide-vue-next';
-import { useAuthStore } from '@/stores/authStore';
-import { storeToRefs } from 'pinia';
-import router from '@/router';
+const authStore = useAuthStore()
+const { isAuthenticated } = storeToRefs(authStore)
 
-const authStore = useAuthStore();
-const { isAuthenticated } = storeToRefs(authStore);
+const cartStore = useCartStore()
+const { itemCount } = storeToRefs(cartStore)
 
 const handleLikesClick = () => {
-  router.push('/likes');
-};
+  router.push('/likes')
+}
 
+const handleCartClick = () => {
+  router.push('/cart')
+}
 </script>
 <style scoped>
 .app-bar-glass {
