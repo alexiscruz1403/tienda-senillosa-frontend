@@ -18,15 +18,15 @@
 
           <v-list min-width="200">
             <v-list-item :key="1" :value="1">
-              <v-list-item-title>Inicio</v-list-item-title>
+              <v-list-item-title @click="handleHomeClick">Inicio</v-list-item-title>
             </v-list-item>
             <v-divider></v-divider>
             <v-list-item :key="2" :value="2">
-              <v-list-item-title>Catálogo</v-list-item-title>
+              <v-list-item-title @click="handleProductsClick">Catálogo</v-list-item-title>
             </v-list-item>
             <v-divider></v-divider>
             <v-list-item :key="3" :value="3">
-              <v-list-item-title>Contacto</v-list-item-title>
+              <v-list-item-title @click="handleAboutClick">Contacto</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>
@@ -69,13 +69,13 @@
           <Heart :size="20" />
         </v-btn>
         <v-btn icon variant="text" aria-label="Cuenta" color="black">
-          <User :size="20" />
+          <User :size="20" @click="handleProfileClick" />
         </v-btn>
       </div>
 
       <div class="order-3 md:hidden">
         <v-btn icon variant="text" aria-label="Cuenta" color="black">
-          <User :size="20" />
+          <User :size="20" @click="handleProfileClick" />
         </v-btn>
       </div>
     </div>
@@ -96,12 +96,28 @@ const { isAuthenticated } = storeToRefs(authStore)
 const cartStore = useCartStore()
 const { itemCount } = storeToRefs(cartStore)
 
+const handleHomeClick = () => {
+  router.push('/')
+}
+
+const handleProductsClick = () => {
+  router.push('/products')
+}
+
+const handleAboutClick = () => {
+  router.push('/about')
+}
+
 const handleLikesClick = () => {
   router.push('/likes')
 }
 
 const handleCartClick = () => {
   router.push('/cart')
+}
+
+const handleProfileClick = () => {
+  router.push('/profile')
 }
 </script>
 <style scoped>

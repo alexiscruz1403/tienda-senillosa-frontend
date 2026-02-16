@@ -18,7 +18,7 @@ export type { AuthToken }
 export interface ApiResponse<T = unknown> {
   data: T
   message: string
-  errors: string[]
+  errors?: string[]
 }
 
 export const getData = async <T>(

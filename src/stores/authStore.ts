@@ -6,16 +6,12 @@ import type { JwtPayload } from '@/types/authTypes'
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('authToken'))
   const isAuthenticated = ref<boolean>(token.value !== null)
-  const user = ref<JwtPayload | null>(
-    token.value ? jwtDecode<JwtPayload>(token.value) : null
-  )
+  const user = ref<JwtPayload | null>(token.value ? jwtDecode<JwtPayload>(token.value) : null)
 
   function login(newToken: string) {
     token.value = newToken
     isAuthenticated.value = true
-    console.log('Antes del decode:', newToken)
     user.value = jwtDecode<JwtPayload>(newToken)
-    console.log('Usuario decodificado:', user.value)
     localStorage.setItem('authToken', newToken)
   }
 
