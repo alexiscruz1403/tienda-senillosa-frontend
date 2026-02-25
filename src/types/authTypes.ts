@@ -1,5 +1,6 @@
 export interface LoginResponse {
   token: string
+  cartCount: number
 }
 
 export interface JwtPayload {

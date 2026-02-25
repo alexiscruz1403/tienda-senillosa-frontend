@@ -11,6 +11,7 @@ export const useCartStore = defineStore('cart', () => {
     try {
       const response = await getData<Array<CartItemResponse>>('/cart')
       items.value = response.data
+      itemCount.value = items.value.reduce((total, item) => total + item.product_quantity, 0)
     } catch (error) {
       console.error('Error fetching cart items:', error)
     }
@@ -89,6 +90,10 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
+  const setItemCount = (count: number) => {
+    itemCount.value = count
+  }
+
   const clearCart = async () => {
     items.value = []
     itemCount.value = 0
@@ -99,5 +104,14 @@ export const useCartStore = defineStore('cart', () => {
     }
   }
 
-  return { items, itemCount, addItem, updateItem, removeItem, clearCart, fetchCartItems }
+  return {
+    items,
+    itemCount,
+    addItem,
+    updateItem,
+    removeItem,
+    clearCart,
+    fetchCartItems,
+    setItemCount,
+  }
 })

@@ -36,15 +36,15 @@ const cartStore = useCartStore()
 const { items } = storeToRefs(cartStore)
 
 const totalPrice = computed(() => {
-  return items.value.reduce((total, item) => {
+  const total = items.value.reduce((total, item) => {
     const discountedPrice = (
       item.product.price -
       (item.product.price * item.product.discount) / 100
     ).toFixed(2)
-    return (total + parseFloat(discountedPrice) * item.product_quantity).toFixed(
-      2,
-    ) as unknown as number
+    return total + parseFloat(discountedPrice) * item.product_quantity
   }, 0)
+
+  return total.toFixed(2)
 })
 
 const handleContinueShopping = () => {

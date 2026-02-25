@@ -50,6 +50,7 @@
           <div>
             <button
               class="flex gap-2 cursor-pointer py-3 px-3 rounded-lg items-center text-[#EF4343]! w-full!"
+              @click="handleLogout()"
             >
               <LogOut class="h-5 w-5" />
               <p>Cerrar sesión</p>
@@ -247,6 +248,7 @@ import {
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useAlert } from '@/composables/useAlert'
+import router from '@/router'
 
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
@@ -454,11 +456,21 @@ const getAddress = async () => {
   }
 }
 
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/')
+}
+
 const loadData = async () => {
   loading.value = true
-  await getInfo()
-  await getAddress()
-  loading.value = false
+  try {
+    await getInfo()
+    await getAddress()
+  } catch (error) {
+    router.push('/login')
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
