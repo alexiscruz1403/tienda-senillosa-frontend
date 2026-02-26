@@ -12,7 +12,7 @@
           v-model="valid"
           ref="form"
           validate-on="submit"
-          @submit.prevent="register"
+          @submit.prevent="registerUser"
           :hide-details="!valid"
           class="w-full md:w-98"
         >
@@ -147,11 +147,12 @@ import LoaderModal from '@/components/LoaderModal.vue'
 import { ref, onBeforeMount } from 'vue'
 import { User, Mail, Lock, Eye, EyeOff } from 'lucide-vue-next'
 import GoogleIcon from '@/components/icons/GoogleIcon.vue'
-import { postData } from '@/services/api.ts'
 import { VForm } from 'vuetify/components'
 import router from '@/router'
 import { useAuthStore } from '@/stores/authStore'
 import { storeToRefs } from 'pinia'
+import { register, type RegisterPayload, type RegisterResponse } from '@/services/authService'
+import { handleApiError } from '@/utils/apiUtils'
 
 const valid = ref<boolean>(false)
 
@@ -196,36 +197,34 @@ const confirmPasswordRules = [
 ]
 
 const loading = ref<boolean>(false)
-const errorMessages = ref<string[]>([])
+const errorMessages = ref<string>('')
 const snackbar = ref<boolean>(false)
 const form = ref<VForm | null>(null)
 
-const register = async (): Promise<void> => {
+const registerUser = async (): Promise<RegisterResponse | undefined> => {
   const { valid: isValid } = await form.value!.validate()
 
   if (!isValid) return
 
   loading.value = true
 
-  const userData = {
+  const userData: RegisterPayload = {
     username: username.value,
     email: email.value,
     password: password.value,
   }
 
-  postData('/auth/register', userData)
-    .then((response) => {
-      console.log('Registro exitoso:', response)
-      router.push('/')
-    })
-    .catch((error) => {
-      console.error('Error en el registro:', error)
-      snackbar.value = true
-      errorMessages.value = error.response.data.errors[0]
-    })
-    .finally(() => {
-      loading.value = false
-    })
+  try {
+    const response = await register(userData)
+    authStore.login(response.data.token)
+    router.push('/')
+  } catch (error) {
+    console.error('Error en el registro:', error)
+    snackbar.value = true
+    errorMessages.value = handleApiError(error)
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleSnackbarClose = () => {

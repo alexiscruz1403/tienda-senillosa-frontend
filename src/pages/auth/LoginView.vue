@@ -12,7 +12,7 @@
           v-model="valid"
           ref="form"
           validate-on="submit"
-          @submit.prevent="login"
+          @submit.prevent="loginUser"
           :hide-details="!valid"
           class="w-full md:w-98"
         >
@@ -102,12 +102,17 @@ import LoaderModal from '@/components/LoaderModal.vue'
 import { ref, onBeforeMount } from 'vue'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
-import { postData } from '@/services/api.ts'
 import { VForm } from 'vuetify/components'
 import { useAuthStore } from '@/stores/authStore'
 import { useCartStore } from '@/stores/cartStore'
 import { storeToRefs } from 'pinia'
-import type { LoginResponse } from '@/types/authTypes.ts'
+import {
+  login,
+  loginWithGoogle,
+  type LoginPayload,
+  type LoginResponse,
+} from '@/services/authService'
+import { handleApiError } from '@/utils/apiUtils'
 
 const valid = ref<boolean>(false)
 const email = ref<string>('')
@@ -140,34 +145,28 @@ const passwordRules = [
   (v: string) => (v && v.length >= 8) || 'La contraseña debe tener al menos 8 caracteres',
 ]
 
-const login = async (): Promise<void> => {
+const loginUser = async (): Promise<LoginResponse | undefined> => {
   const { valid: isValid } = await form.value!.validate()
 
   if (!isValid) return
 
   loading.value = true
 
-  const userData = {
+  const userData: LoginPayload = {
     email: email.value,
     password: password.value,
   }
 
-  postData<LoginResponse>('/auth/login', userData)
-    .then((response) => {
-      authStore.login(response.data.token)
-      cartStore.setItemCount(response.data.cartCount)
-    })
-    .catch((error) => {
-      snackbar.value = true
-      errorMessages.value = error.response.data.errors[0]
-    })
-    .finally(() => {
-      loading.value = false
-    })
-}
-
-const loginWithGoogle = (): void => {
-  window.location.href = 'http://localhost:8000/api/auth/google/redirect'
+  try {
+    const response = await login(userData)
+    authStore.login(response.data.token)
+    cartStore.setItemCount(response.data.cartCount)
+  } catch (error) {
+    snackbar.value = true
+    errorMessages.value = handleApiError(error)
+  } finally {
+    loading.value = false
+  }
 }
 
 onBeforeMount(() => {

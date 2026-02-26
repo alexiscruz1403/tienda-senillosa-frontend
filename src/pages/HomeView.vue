@@ -180,12 +180,19 @@
         </v-card>
       </div>
     </section>
+    <app-alert
+      :alertMessage="alertMessage"
+      :alertTitle="alertTitle"
+      :alertType="alertType"
+      :showAlert="showAlert"
+    />
   </app-layout>
 </template>
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import AppLayout from '@/layout/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
+import AppAlert from '@/components/AppAlert.vue'
 import {
   ChevronLeft,
   ChevronRight,
@@ -195,18 +202,21 @@ import {
   Shield,
   RefreshCcw,
 } from 'lucide-vue-next'
-import { getData } from '@/services/api'
 import { likeProduct } from '@/services/likeService'
-import type { PublicProduct } from '@/types/ProductTypes'
+import { type PublicProduct, getFeaturedProducts } from '@/services/productService'
 import { useAuthStore } from '@/stores/authStore'
 import { storeToRefs } from 'pinia'
 import router from '@/router'
+import { useAlert } from '@/composables/useAlert'
+import { handleApiError } from '@/utils/apiUtils'
 
 const loading = ref<boolean>(true)
 const featuredProducts = ref<Array<PublicProduct>>([])
 
 const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
+
+const { alertMessage, alertTitle, alertType, showAlert, displayAlertError } = useAlert()
 
 const getItemsPerPage = () => {
   if (window.innerWidth >= 1024) return 4 // lg
@@ -245,7 +255,7 @@ const disableNextButton = () => {
   return lastDisplayedItem.value >= totalItems.value
 }
 
-const handleLikeClick = (productId: number) => {
+const handleLikeClick = async (productId: number) => {
   if (!isAuthenticated.value) {
     router.push('/login')
     return
@@ -261,35 +271,33 @@ const handleLikeClick = (productId: number) => {
     return product
   })
 
-  likeProduct(productId)
-    .then(() => {
-      // Successfully liked/unliked the product
-    })
-    .catch((error) => {
-      console.error('Error liking/unliking product:', error)
-      featuredProducts.value = featuredProducts.value.map((product) => {
-        if (product.product_id === productId) {
-          return {
-            ...product,
-            is_liked: !product.is_liked,
-          }
+  try {
+    await likeProduct(productId)
+  } catch (error) {
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al darle Me Gusta al producto', errors)
+    featuredProducts.value = featuredProducts.value.map((product) => {
+      if (product.product_id === productId) {
+        return {
+          ...product,
+          is_liked: !product.is_liked,
         }
-        return product
-      })
+      }
+      return product
     })
+  }
 }
 
 const fetchFeaturedProducts = async () => {
-  getData<Array<PublicProduct>>('/products/featured')
-    .then((response) => {
-      featuredProducts.value = response.data as Array<PublicProduct>
-    })
-    .catch((error) => {
-      console.error('Error fetching featured products:', error)
-    })
-    .finally(() => {
-      loading.value = false
-    })
+  try {
+    const featuredProductsResponse = await getFeaturedProducts()
+    featuredProducts.value = featuredProductsResponse.data
+  } catch (error) {
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al obtener los productos detacados', errors)
+  } finally {
+    loading.value = false
+  }
 }
 
 const validateUserToken = async () => {

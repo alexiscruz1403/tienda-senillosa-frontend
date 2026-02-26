@@ -1,6 +1,6 @@
 <template>
   <app-layout>
-    <div class="bg-[#F4F6FB]">
+    <div class="bg-[#F4F6FB] min-h-screen">
       <div class="bg-[#0E1629] w-full h-52 text-white flex flex-col gap-2 justify-center px-4">
         <h1 class="text-4xl md:text-5xl font-bold">Catálogo</h1>
         <p class="text-[#F8FAFCB2]">{{ matchesFound }} productos encontrados</p>
@@ -159,9 +159,14 @@
               />
             </div>
           </div>
-          <v-btn @click="fetchProducts" color="primary" v-if="!loading && page != 1"
-            >Cargar más</v-btn
+          <div
+            v-if="products.length === 0 && !loading"
+            class="w-full h-full flex flex-col items-center justify-center text-[#65758B] md:text-xl gap-2"
           >
+            <SearchX :size="60" />
+            <p>No hay productos disponibles que coincidan con los filtros aplicados</p>
+          </div>
+          <v-btn @click="getCatalog" color="primary" v-if="!loading && page != 1">Cargar más</v-btn>
         </div>
       </div>
 
@@ -244,17 +249,26 @@
           </div>
         </div>
       </v-slide-x-transition>
+      <app-alert
+        :alertMessage="alertMessage"
+        :alertTitle="alertTitle"
+        :alertType="alertType"
+        :showAlert="showAlert"
+      />
     </div>
   </app-layout>
 </template>
 <script lang="ts" setup>
 import AppLayout from '@/layout/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
-import { Search, Funnel, X } from 'lucide-vue-next'
+import AppAlert from '@/components/AppAlert.vue'
+import { Search, Funnel, X, SearchX } from 'lucide-vue-next'
 import { ref, onMounted, watch } from 'vue'
-import type { PublicProduct, PublicProductPaginated } from '@/types/ProductTypes'
-import { getData } from '@/services/api'
+import type { PublicProduct } from '@/services/productService'
 import { likeProduct } from '@/services/likeService'
+import { useAlert } from '@/composables/useAlert'
+import { handleApiError } from '@/utils/apiUtils'
+import { getProductCatalog, type ProductCatalogParams } from '@/services/productService'
 
 const loading = ref<boolean>(true)
 const products = ref<PublicProduct[]>([])
@@ -276,6 +290,8 @@ const genderFilterValue = ref<string>('')
 const matchesFound = ref<number>(0)
 const page = ref<number>(1)
 
+const { alertMessage, alertTitle, alertType, showAlert, displayAlertError } = useAlert()
+
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 let abortController: AbortController | null = null
@@ -294,12 +310,13 @@ const handleProductLike = async (productId: number) => {
     product.is_liked = !currentLikeStatus
     await likeProduct(product.product_id)
   } catch (error) {
-    console.error('Error liking the related product:', error)
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al dar Me Gusta al producto', errors)
     product.is_liked = currentLikeStatus
   }
 }
 
-const fetchProducts = () => {
+const getCatalog = async () => {
   loading.value = true
 
   if (abortController) {
@@ -308,37 +325,33 @@ const fetchProducts = () => {
 
   abortController = new AbortController()
 
-  getData<PublicProductPaginated>(
-    '/products',
-    {
+  try {
+    const params: ProductCatalogParams = {
       search: searchValue.value,
       category: categoryFilterValue.value,
       gender: genderFilterValue.value,
       ordering: orderingValue.value,
       page: page.value,
-    },
-    { signal: abortController?.signal },
-  )
-    .then((response) => {
-      products.value = [...products.value, ...response.data.data]
+    }
+    const response = await getProductCatalog(params, abortController)
 
-      matchesFound.value = response.data.meta.total
-      if (response.data.links.next) {
-        page.value += 1
-      } else {
-        page.value = 1
-      }
-    })
-    .catch((error) => {
-      if (error.name === 'AbortError') {
-        console.log('Solicitud abortada')
-        return
-      }
-      console.error('Error al obtener productos: ', error)
-    })
-    .finally(() => {
-      loading.value = false
-    })
+    products.value = [...products.value, ...response.data.data]
+
+    matchesFound.value = response.data.meta.total
+    if (response.data.links.next) {
+      page.value += 1
+    } else {
+      page.value = 1
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      return
+    }
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al obtener el catálogo de productos', errors)
+  } finally {
+    loading.value = false
+  }
 }
 
 const clearFilters = () => {
@@ -357,7 +370,7 @@ const activeFilters = (): boolean => {
 }
 
 onMounted(() => {
-  fetchProducts()
+  getCatalog()
 })
 
 watch([searchValue, categoryFilterValue, genderFilterValue, orderingValue], () => {
@@ -368,7 +381,7 @@ watch([searchValue, categoryFilterValue, genderFilterValue, orderingValue], () =
   debounceTimer = setTimeout(() => {
     products.value = []
     page.value = 1
-    fetchProducts()
+    getCatalog()
   }, 500)
 })
 </script>

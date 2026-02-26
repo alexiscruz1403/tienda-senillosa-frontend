@@ -10,6 +10,7 @@ import { useCartStore } from './stores/cartStore'
 import { useAppStore } from './stores/appStore'
 import { storeToRefs } from 'pinia'
 import { onMounted } from 'vue'
+import { getCartProducts } from './services/cartService'
 
 const uiStore = useUiStore()
 const { isLoading } = storeToRefs(uiStore)
@@ -21,8 +22,13 @@ const cartStore = useCartStore()
 
 const fetchCart = async () => {
   if (!fetchedCart.value) {
-    await cartStore.fetchCartItems()
-    appStore.setFetchedCart(true)
+    try {
+      const cartProductsResponse = getCartProducts()
+      cartStore.setCartItems((await cartProductsResponse).data)
+      appStore.setFetchedCart(true)
+    } catch (error) {
+      console.error('Error al cargar el carrito: ', error)
+    }
   }
 }
 

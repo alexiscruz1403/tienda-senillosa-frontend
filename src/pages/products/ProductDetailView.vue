@@ -187,15 +187,12 @@
           </div>
         </div>
       </section>
-      <div :class="alertPositionClass" v-if="showAlert">
-        <v-alert
-          closable
-          :variant="alertVariant"
-          :text="alertText"
-          :type="alertType"
-          :title="alertTitle"
-        ></v-alert>
-      </div>
+      <app-alert
+        :alertMessage="alertMessage"
+        :alertTitle="alertTitle"
+        :alertType="alertType"
+        :showAlert="showAlert"
+      />
     </div>
   </app-layout>
 </template>
@@ -204,14 +201,16 @@ import AppLayout from '@/layout/AppLayout.vue'
 import SizeButton from '@/components/SizeButton.vue'
 import ItemCounter from '@/components/ItemCounter.vue'
 import ProductCard from '@/components/ProductCard.vue'
+import AppAlert from '@/components/AppAlert.vue'
 import { ChevronLeft, ChevronRight, Heart, ShoppingBag } from 'lucide-vue-next'
 import router from '@/router'
-import type { PublicProduct } from '@/types/ProductTypes'
-import { getData } from '@/services/api'
+import { getProductById, getRelatedProducts, type PublicProduct } from '@/services/productService'
 import { likeProduct } from '@/services/likeService'
-import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useCartStore } from '@/stores/cartStore'
-import type { CartItemPayload } from '@/types/CartTypes'
+import { type CartItemPayload, addProductToCart } from '@/services/cartService'
+import { useAlert } from '@/composables/useAlert'
+import { handleApiError } from '@/utils/apiUtils'
 
 const loading = ref<boolean>(true)
 const product = ref<PublicProduct | null>(null)
@@ -224,32 +223,10 @@ const selectedSize = ref<string | null>(null)
 const maxQuantity = ref<number>(0)
 const modelValue = ref<number>(1)
 
-const showAlert = ref<boolean>(false)
-const alertText = ref<string>('Remera negra clasica Talle S')
-const alertType = ref<'success' | 'info' | 'warning' | 'error'>('success')
-const alertTitle = ref<string>('Producto agregado al carrito')
+const { alertMessage, alertTitle, alertType, showAlert, displayAlertError, displayAlertSuccess } =
+  useAlert()
 
 const cartStore = useCartStore()
-
-const screenWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
-
-const isMobile = computed(() => screenWidth.value < 1024)
-
-const alertVariant = computed(() => (isMobile.value ? 'flat' : 'tonal'))
-
-const alertPositionClass = computed(() => {
-  if (isMobile.value) {
-    return 'fixed top-20 left-1/2 transform -translate-x-1/2 w-[90%]'
-  }
-
-  return 'fixed bottom-4 right-4 md:w-96'
-})
-
-onMounted(() => {
-  const onResize = () => (screenWidth.value = window.innerWidth)
-  window.addEventListener('resize', onResize)
-  onUnmounted(() => window.removeEventListener('resize', onResize))
-})
 
 const isNew = (): boolean => {
   if (!product.value) return false
@@ -332,7 +309,8 @@ const handleLikeClick = async () => {
     product.value.is_liked = !currentLikeStatus
     await likeProduct(product.value.product_id)
   } catch (error) {
-    console.error('Error liking the product:', error)
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al dar Me Gusta al producto', errors)
     product.value.is_liked = currentLikeStatus
   }
 }
@@ -347,24 +325,10 @@ const handleRelatedProductLikeClick = async (productId: number) => {
     relatedProduct.is_liked = !currentLikeStatus
     await likeProduct(relatedProduct.product_id)
   } catch (error) {
-    console.error('Error liking the related product:', error)
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al dar Me Gusta al producto', errors)
     relatedProduct.is_liked = currentLikeStatus
   }
-}
-
-const displayAlert = (type: 'success' | 'info' | 'warning' | 'error', error: string = '') => {
-  alertType.value = type
-  alertTitle.value =
-    type === 'success' ? 'Producto agregado al carrito' : 'Error al agregar al carrito'
-  alertText.value =
-    type === 'success'
-      ? `${product.value?.name} Talle ${selectedSize.value} x${modelValue.value}`
-      : `No se pudo agregar el producto al carrito: ${error}`
-  showAlert.value = true
-
-  setTimeout(() => {
-    showAlert.value = false
-  }, 3000)
 }
 
 const handleCartClick = async () => {
@@ -383,38 +347,50 @@ const handleCartClick = async () => {
       quantity: modelValue.value,
       size: selectedSize.value,
     }
-    displayAlert('success')
-    await cartStore.addItem(cartItem)
+    cartStore.addItem(cartItem)
+    displayAlertSuccess(
+      'Producto añadido al carrito',
+      `${cartItem.product.name} Talle ${cartItem.size} x ${cartItem.quantity}`,
+    )
+    await addProductToCart(cartItem)
   } catch (error) {
-    console.error('Error adding product to cart:', error)
-    displayAlert('error', (error as Error).message)
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al agregar el producto al carrito', errors)
   }
 }
 
-onMounted(() => {
+const getProduct = async () => {
   const productId = router.currentRoute.value.params.id
-  getData<PublicProduct>(`/products/${productId}`)
-    .then((response) => {
-      product.value = response.data
-      getData<PublicProduct[]>(`/products/${productId}/related`)
-        .then((relatedResponse) => {
-          relatedProducts.value = relatedResponse.data
-        })
-        .catch((error) => {
-          console.error('Error fetching related products:', error)
-        })
-        .finally(() => {
-          loadingRelated.value = false
-        })
-    })
-    .catch((error) => {
-      console.error('Error fetching product data:', error)
-      router.push('/products')
-    })
-    .finally(() => {
-      loading.value = false
-    })
+  const numberedProductId: number = Number(productId) ?? 0
+
+  if (numberedProductId === 0) router.push('/products')
+
+  try {
+    const productResponse = await getProductById(numberedProductId)
+    product.value = productResponse.data
+    const relatedProductsResponse = await getRelatedProducts(numberedProductId)
+    relatedProducts.value = relatedProductsResponse.data
+  } catch (error) {
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al obtener el producto', errors)
+  } finally {
+    loading.value = false
+    loadingRelated.value = false
+  }
+}
+
+onMounted(async () => {
+  getProduct()
 })
+
+watch(
+  () => router.currentRoute.value.params.id,
+  () => {
+    loading.value = true
+    loadingRelated.value = true
+    getProduct()
+  },
+)
 
 const discountedPrice = computed(() => {
   if (product.value && product.value.discount) {
