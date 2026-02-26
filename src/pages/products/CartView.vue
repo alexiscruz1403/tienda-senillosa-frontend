@@ -130,6 +130,12 @@
           <cart-summary v-if="!loading && items.length" />
         </section>
       </div>
+      <app-alert
+        :alertMessage="alertMessage"
+        :alertTitle="alertTitle"
+        :alertType="alertType"
+        :showAlert="showAlert"
+      />
     </div>
   </app-layout>
 </template>
@@ -137,12 +143,22 @@
 import AppLayout from '@/layout/AppLayout.vue'
 import CartItem from '@/components/CartItem.vue'
 import CartSummary from '@/components/CartSummary.vue'
+import AppAlert from '@/components/AppAlert.vue'
 import { ShoppingBag } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/authStore'
 import { useCartStore } from '@/stores/cartStore'
 import { storeToRefs } from 'pinia'
 import { onMounted, ref } from 'vue'
-import type { CartItemPayload } from '@/types/CartTypes'
+import {
+  type CartItemPayload,
+  type CartItemResponse,
+  getCartProducts,
+  updateProductCart,
+  removeProductFromCart,
+  clearCart,
+} from '@/services/cartService'
+import { useAlert } from '@/composables/useAlert'
+import { handleApiError } from '@/utils/apiUtils'
 import router from '@/router'
 
 const authStore = useAuthStore()
@@ -155,42 +171,55 @@ const loading = ref<boolean>(true)
 
 const emptyProducts = ref<boolean>(false)
 
-const fetchCartItems = async () => {
-  await cartStore.fetchCartItems()
-  loading.value = false
-  if (items.value.length === 0) {
-    emptyProducts.value = true
-  } else {
-    emptyProducts.value = false
+const { alertMessage, alertTitle, alertType, showAlert, displayAlertError } = useAlert()
+
+const getCartItems = async () => {
+  try {
+    const cartProductsResponse = await getCartProducts()
+    const cartProducts: CartItemResponse[] = cartProductsResponse.data
+    cartStore.setCartItems(cartProducts)
+    loading.value = false
+    if (items.value.length === 0) {
+      emptyProducts.value = true
+    } else {
+      emptyProducts.value = false
+    }
+  } catch (error) {
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al obtener su carrito', errors)
   }
 }
 
 const updateItemQuantity = async (productId: number, size: string, quantity: number) => {
   try {
     const product: CartItemPayload = { product: { product_id: productId }, size, quantity }
-    await cartStore.updateItem(product)
+    cartStore.updateItem(product)
+    await updateProductCart(product)
   } catch (error) {
-    console.error('Error updating item quantity:', error)
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al actualizar su carrito', errors)
   }
 }
 
 const removeItemFromCart = async (productId: number, size: string) => {
   try {
-    if (items.value.length === 1) {
-      emptyProducts.value = true
-    }
-    await cartStore.removeItem(productId, size)
+    cartStore.removeItem(productId, size)
+    emptyProducts.value = items.value.length === 0
+    await removeProductFromCart(productId, size)
   } catch (error) {
-    console.error('Error removing item from cart:', error)
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al eliminar el producto de su carrito', errors)
   }
 }
 
 const handleClearCart = async () => {
   try {
     emptyProducts.value = true
-    await cartStore.clearCart()
+    cartStore.clearCart()
+    await clearCart()
   } catch (error) {
-    console.error('Error clearing cart:', error)
+    const errors = handleApiError(error)
+    displayAlertError('Ocurrió un error al limpiar su carrito', errors)
   }
 }
 
@@ -204,6 +233,6 @@ onMounted(() => {
     return
   }
 
-  fetchCartItems()
+  getCartItems()
 })
 </script>

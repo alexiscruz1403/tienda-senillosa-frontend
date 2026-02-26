@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { jwtDecode } from 'jwt-decode'
 import type { JwtPayload } from '@/types/authTypes'
+import { validateToken, refreshToken } from '@/services/authService'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('authToken'))
@@ -22,5 +23,36 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('authToken')
   }
 
-  return { isAuthenticated, user, login, logout }
+  async function refreshUserToken() {
+    try {
+      const response = await refreshToken()
+      login(response.data.token)
+    } catch (error) {
+      console.error('Error refreshing token:', error)
+      logout()
+    }
+  }
+
+  async function validateUserToken() {
+    if (isAuthenticated.value && token.value) {
+      try {
+        const response = await validateToken()
+        if (!response.data.valid) {
+          logout()
+        }
+      } catch (error) {
+        console.error('Error validating token:', error)
+        try {
+          await refreshUserToken()
+        } catch (refreshError) {
+          console.error('Token validation and refresh failed:', refreshError)
+          logout()
+        }
+      }
+    } else {
+      logout()
+    }
+  }
+
+  return { isAuthenticated, user, login, logout, validateUserToken }
 })

@@ -50,6 +50,7 @@
           <div>
             <button
               class="flex gap-2 cursor-pointer py-3 px-3 rounded-lg items-center text-[#EF4343]! w-full!"
+              @click="handleLogout()"
             >
               <LogOut class="h-5 w-5" />
               <p>Cerrar sesión</p>
@@ -211,15 +212,12 @@
           </div>
         </section>
       </div>
-      <div :class="alertPositionClass" v-if="showAlert">
-        <v-alert
-          closable
-          variant="flat"
-          :text="alertMessage"
-          :type="alertType"
-          :title="alertTitle"
-        ></v-alert>
-      </div>
+      <app-alert
+        :alertMessage="alertMessage"
+        :alertTitle="alertTitle"
+        :alertType="alertType"
+        :showAlert="showAlert"
+      />
       <loader-modal :display="loading" />
     </div>
   </app-layout>
@@ -227,9 +225,10 @@
 <script setup lang="ts">
 import CustomInput from '@/components/CustomInput.vue'
 import LoaderModal from '@/components/LoaderModal.vue'
+import AppAlert from '@/components/AppAlert.vue'
 import { User, LogOut, Save } from 'lucide-vue-next'
 import AppLayout from '@/layout/AppLayout.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { storeToRefs } from 'pinia'
 import type {
@@ -247,6 +246,8 @@ import {
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useAlert } from '@/composables/useAlert'
+import router from '@/router'
+import { handleApiError } from '@/utils/apiUtils'
 
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
@@ -255,17 +256,6 @@ const selectedMenu = ref<string>('profile')
 
 const { alertMessage, alertTitle, alertType, showAlert, displayAlertSuccess, displayAlertError } =
   useAlert()
-
-const screenWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
-const isMobile = computed(() => screenWidth.value < 1024)
-
-const alertPositionClass = computed(() => {
-  if (isMobile.value) {
-    return 'fixed top-20 left-1/2 transform -translate-x-1/2 w-[90%]'
-  }
-
-  return 'fixed bottom-4 right-4 md:w-96'
-})
 
 const loading = ref<boolean>(false)
 
@@ -311,7 +301,8 @@ const onInfoSubmit = handleInfoFormSubmit(async (values: InfoFormPayload) => {
     displayAlertSuccess('', 'Información actualizada correctamente')
     await getInfo()
   } catch (error) {
-    displayAlertError('Error al actualizar la información', error.response.data.errors)
+    const errors = handleApiError(error)
+    displayAlertError('Error al actualizar la información', errors)
   }
 })
 
@@ -368,7 +359,8 @@ const onAddressSubmit = handleAddressFormSubmit(async (values: AddressFormPayloa
     displayAlertSuccess('', 'Dirección actualizada correctamente')
     await getAddress()
   } catch (error) {
-    displayAlertError('Error al actualizar la dirección', error.response.data.errors)
+    const errors = handleApiError(error)
+    displayAlertError('Error al actualizar la dirección', errors)
   }
 })
 
@@ -384,11 +376,7 @@ const passwordFormSchema = yup.object({
     .required('La confirmación de la nueva contraseña es obligatoria.'),
 })
 
-const {
-  handleSubmit: handlePasswordFormSubmit,
-  meta: metaPasswordForm,
-  resetForm: resetPasswordForm,
-} = useForm({
+const { handleSubmit: handlePasswordFormSubmit, meta: metaPasswordForm } = useForm({
   validationSchema: passwordFormSchema,
   initialValues: {
     current_password: '',
@@ -411,7 +399,8 @@ const onPasswordSubmit = handlePasswordFormSubmit(async (values: PasswordFormPay
     new_password.value = ''
     confirm_password.value = ''
   } catch (error) {
-    displayAlertError('Error al actualizar la contraseña', error.response.data.errors)
+    const errors = handleApiError(error)
+    displayAlertError('Error al actualizar la contraseña', errors)
   }
 })
 
@@ -430,7 +419,8 @@ const getInfo = async () => {
         response.data.has_google_id !== null && response.data.has_google_id !== undefined
     }
   } catch (error) {
-    displayAlertError('Error al obtener la información', error.response.data.errors)
+    const errors = handleApiError(error)
+    displayAlertError('Error al obtener la información', errors)
   }
 }
 
@@ -450,15 +440,26 @@ const getAddress = async () => {
       })
     }
   } catch (error) {
-    displayAlertError('Error al obtener la dirección', error.response.data.errors)
+    const errors = handleApiError(error)
+    displayAlertError('Error al obtener la dirección', errors)
   }
+}
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/')
 }
 
 const loadData = async () => {
   loading.value = true
-  await getInfo()
-  await getAddress()
-  loading.value = false
+  try {
+    await getInfo()
+    await getAddress()
+  } catch (error) {
+    router.push('/login')
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
