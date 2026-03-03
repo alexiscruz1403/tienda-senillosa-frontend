@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import type { CartItemPayload, CartItemResponse } from '@/services/cartService'
 
 export const useCartStore = defineStore('cart', () => {
-  const items = ref<Array<CartItemResponse>>([])
+  const items = ref<CartItemResponse[]>([])
   const itemCount = ref<number>(0)
 
   const updateItemCount = () => {

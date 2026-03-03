@@ -9,6 +9,7 @@ import CatalogView from '@/pages/products/CatalogView.vue'
 import LikesView from '@/pages/products/LikesView.vue'
 import CartView from '@/pages/products/CartView.vue'
 import ProfileView from '@/pages/profile/ProfileView.vue'
+import OrderView from '@/pages/orders/OrderView.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useUiStore } from '@/stores/uiStore'
 import { storeToRefs } from 'pinia'
@@ -68,6 +69,11 @@ const router = createRouter({
       name: 'profile',
       component: ProfileView,
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/orders/:id',
+      name: 'order',
+      component: OrderView,
     },
   ],
 })

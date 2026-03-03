@@ -59,7 +59,10 @@
         </section>
 
         <!-- Seccion de Mi Perfil -->
-        <section class="bg-white px-4 py-4 flex flex-col gap-8 rounded-lg w-full">
+        <section
+          class="bg-white px-4 py-4 flex flex-col gap-8 rounded-lg w-full"
+          v-if="selectedMenu === 'profile'"
+        >
           <div class="flex flex-col gap-4">
             <h2 class="text-lg font-semibold">Información Personal</h2>
             <v-form class="flex flex-col gap-6" @submit.prevent="onInfoSubmit()">
@@ -211,6 +214,17 @@
             </v-form>
           </div>
         </section>
+
+        <!-- Seccion de mis ordenes -->
+        <section
+          class="bg-white px-4 py-4 flex flex-col gap-8 rounded-lg w-full"
+          v-if="selectedMenu === 'orders'"
+        >
+          <div class="flex flex-col gap-4">
+            <h2 class="text-lg font-semibold">Mis Órdenes</h2>
+            <order-item v-for="order in orders" :order="order" :key="order.order_id" />
+          </div>
+        </section>
       </div>
       <app-alert
         :alertMessage="alertMessage"
@@ -226,6 +240,7 @@
 import CustomInput from '@/components/CustomInput.vue'
 import LoaderModal from '@/components/LoaderModal.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import OrderItem from '@/components/OrderItem.vue'
 import { User, LogOut, Save } from 'lucide-vue-next'
 import AppLayout from '@/layout/AppLayout.vue'
 import { ref, onMounted } from 'vue'
@@ -243,11 +258,14 @@ import {
   updateUserAddress,
   updateUserPassword,
 } from '@/services/userService'
+import { getUserOrders, type Order } from '@/services/orderService'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useAlert } from '@/composables/useAlert'
 import router from '@/router'
 import { handleApiError } from '@/utils/apiUtils'
+
+const orders = ref<Order[]>([])
 
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
@@ -297,12 +315,15 @@ const { value: phone_number, errorMessage: phoneNumberError } = useField<string>
 
 const onInfoSubmit = handleInfoFormSubmit(async (values: InfoFormPayload) => {
   try {
+    loading.value = true
     await updateUserInfo(values)
     displayAlertSuccess('', 'Información actualizada correctamente')
     await getInfo()
   } catch (error) {
     const errors = handleApiError(error)
     displayAlertError('Error al actualizar la información', errors)
+  } finally {
+    loading.value = false
   }
 })
 
@@ -355,12 +376,15 @@ const { value: additional_info, errorMessage: additionalInfoError } =
 
 const onAddressSubmit = handleAddressFormSubmit(async (values: AddressFormPayload) => {
   try {
+    loading.value = true
     await updateUserAddress(values)
-    displayAlertSuccess('', 'Dirección actualizada correctamente')
     await getAddress()
+    displayAlertSuccess('', 'Dirección actualizada correctamente')
   } catch (error) {
     const errors = handleApiError(error)
     displayAlertError('Error al actualizar la dirección', errors)
+  } finally {
+    loading.value = false
   }
 })
 
@@ -393,6 +417,7 @@ const { value: confirm_password, errorMessage: confirmPasswordError } =
 
 const onPasswordSubmit = handlePasswordFormSubmit(async (values: PasswordFormPayload) => {
   try {
+    loading.value = true
     await updateUserPassword(values)
     displayAlertSuccess('', 'Contraseña actualizada correctamente')
     current_password.value = ''
@@ -401,6 +426,8 @@ const onPasswordSubmit = handlePasswordFormSubmit(async (values: PasswordFormPay
   } catch (error) {
     const errors = handleApiError(error)
     displayAlertError('Error al actualizar la contraseña', errors)
+  } finally {
+    loading.value = false
   }
 })
 
@@ -445,6 +472,18 @@ const getAddress = async () => {
   }
 }
 
+const getOrders = async () => {
+  try {
+    const response = await getUserOrders()
+    if (response.data !== null && response.data !== undefined) {
+      orders.value = response.data
+    }
+  } catch (error) {
+    const errors = handleApiError(error)
+    displayAlertError('Error al obtener la dirección', errors)
+  }
+}
+
 const handleLogout = () => {
   authStore.logout()
   router.push('/')
@@ -455,7 +494,9 @@ const loadData = async () => {
   try {
     await getInfo()
     await getAddress()
+    await getOrders()
   } catch (error) {
+    console.error('Error al cargar la informacion: ', error)
     router.push('/login')
   } finally {
     loading.value = false
