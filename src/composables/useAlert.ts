@@ -1,65 +1,33 @@
 import { ref } from 'vue'
 
+const alertMessage = ref<string>('')
+const alertTitle = ref<string>('')
+const alertType = ref<'success' | 'info' | 'warning' | 'error'>('success')
+const showAlert = ref<boolean>(false)
+
+let timeout: ReturnType<typeof setTimeout> | null = null
+
+const hideAlert = (delay: number) => {
+  if (timeout) clearTimeout(timeout)
+
+  timeout = setTimeout(() => {
+    showAlert.value = false
+  }, delay)
+}
+
 export const useAlert = () => {
-  const alertMessage = ref<string>('')
-  const alertTitle = ref<string>('')
-  const alertType = ref<'success' | 'info' | 'warning' | 'error'>('success')
-  const showAlert = ref<boolean>(false)
-
-  const setAlertMessage = (message: string): void => {
-    alertMessage.value = message
-  }
-
-  const setAlertTitle = (title: string): void => {
-    alertTitle.value = title
-  }
-
-  const setAlertType = (type: 'success' | 'info' | 'error' | 'warning') => {
+  const displayAlert = (
+    type: 'success' | 'info' | 'warning' | 'error',
+    title: string,
+    message: string,
+    duration = 4000,
+  ) => {
     alertType.value = type
-  }
-
-  const displayAlertSuccess = (title: string, message: string) => {
-    setAlertType('success')
-    setAlertTitle(title)
-    setAlertMessage(message)
+    alertTitle.value = title
+    alertMessage.value = message
     showAlert.value = true
 
-    setTimeout(() => {
-      showAlert.value = false
-    }, 3000)
-  }
-
-  const displayAlertError = (title: string, message: string) => {
-    setAlertType('error')
-    setAlertTitle(title)
-    setAlertMessage(message)
-    showAlert.value = true
-
-    setTimeout(() => {
-      showAlert.value = false
-    }, 5000)
-  }
-
-  const displayAlertInfo = (title: string, message: string) => {
-    setAlertType('info')
-    setAlertTitle(title)
-    setAlertMessage(message)
-    showAlert.value = true
-
-    setTimeout(() => {
-      showAlert.value = false
-    }, 5000)
-  }
-
-  const displayAlertWarning = (title: string, message: string) => {
-    setAlertType('warning')
-    setAlertTitle(title)
-    setAlertMessage(message)
-    showAlert.value = true
-
-    setTimeout(() => {
-      showAlert.value = false
-    }, 5000)
+    hideAlert(duration)
   }
 
   return {
@@ -67,9 +35,16 @@ export const useAlert = () => {
     alertTitle,
     alertType,
     showAlert,
-    displayAlertError,
-    displayAlertInfo,
-    displayAlertSuccess,
-    displayAlertWarning,
+
+    displayAlertSuccess: (title: string, message: string) =>
+      displayAlert('success', title, message, 3000),
+
+    displayAlertError: (totle: string, message: string) =>
+      displayAlert('error', totle, message, 5000),
+
+    displayAlertInfo: (totle: string, message: string) => displayAlert('info', totle, message),
+
+    displayAlertWarning: (totle: string, message: string) =>
+      displayAlert('warning', totle, message),
   }
 }

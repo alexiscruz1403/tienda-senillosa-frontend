@@ -7,7 +7,7 @@
     <div class="bg-[#F4F6FB] min-h-screen w-screen py-8 px-4">
       <div
         class="h-full w-full flex flex-col items-center justify-center gap-6"
-        v-if="emptyProducts && !loading"
+        v-if="emptyProducts && !isLoading"
       >
         <div class="px-6 py-6 rounded-full bg-[#EDEFF3] max-w-max">
           <ShoppingBag :size="50" color="#65758B" />
@@ -27,7 +27,7 @@
       </div>
       <div v-else class="w-full h-full flex flex-col items-center lg:flex-row gap-8 lg:items-start">
         <section class="w-full lg:w-[60%] flex flex-col gap-2">
-          <div v-if="loading" class="w-full">
+          <div v-if="isLoading" class="w-full">
             <div class="bg-white w-full flex px-6 py-6 gap-8 rounded-lg animate-pulse">
               <!-- Image skeleton -->
               <div class="bg-gray-300 h-32 w-24 lg:h-40 lg:w-32 rounded"></div>
@@ -78,10 +78,8 @@
             :size="item.stock.size"
             :product_quantity="item.product_quantity"
             :max="item.stock.quantity"
-            @update-quantity="updateItemQuantity"
-            @remove-item="removeItemFromCart"
           />
-          <div v-if="!loading && items.length">
+          <div v-if="!isLoading && items.length">
             <button
               class="text-sm! text-[#65758B]! hover:text-[#EF4343]! py-2! transition-colors duration-300"
               @click="handleClearCart"
@@ -93,7 +91,7 @@
         <section class="w-full lg:w-[40%]">
           <div
             class="w-full bg-white px-6 py-6 flex flex-col gap-4 rounded-lg animate-pulse"
-            v-if="loading"
+            v-if="isLoading"
           >
             <!-- Title skeleton -->
             <div class="bg-gray-300 h-6 w-32 rounded"></div>
@@ -127,7 +125,7 @@
               </div>
             </div>
           </div>
-          <cart-summary v-if="!loading && items.length" />
+          <cart-summary v-if="!isLoading && items.length" />
         </section>
       </div>
       <app-alert
@@ -144,95 +142,39 @@ import AppLayout from '@/layout/AppLayout.vue'
 import CartItem from '@/components/CartItem.vue'
 import CartSummary from '@/components/CartSummary.vue'
 import AppAlert from '@/components/AppAlert.vue'
-import { ShoppingBag } from 'lucide-vue-next'
-import { useAuthStore } from '@/stores/authStore'
-import { useCartStore } from '@/stores/cartStore'
-import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
-import {
-  type CartItemPayload,
-  type CartItemResponse,
-  getCartProducts,
-  updateProductCart,
-  removeProductFromCart,
-  clearCart,
-} from '@/services/cartService'
+import { ShoppingBag, ArrowRight } from 'lucide-vue-next'
+import { computed } from 'vue'
 import { useAlert } from '@/composables/useAlert'
-import { handleApiError } from '@/utils/apiUtils'
+import { useCartQuery } from '@/queries/cart.query'
+import { useClearCartMutation } from '@/mutations/cart.mutation'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
+import { useMutationErrorHandler } from '@/composables/useMutationErrorHandler'
 import router from '@/router'
 
-const authStore = useAuthStore()
-const { isAuthenticated } = storeToRefs(authStore)
+const cartQuery = useCartQuery()
+const { data, isLoading } = cartQuery
+useQueryErrorHandler(cartQuery)
 
-const cartStore = useCartStore()
-const { items, itemCount } = storeToRefs(cartStore)
+const clearCartMutation = useClearCartMutation()
+const { mutate: clearCart } = clearCartMutation
+useMutationErrorHandler(clearCartMutation)
 
-const loading = ref<boolean>(true)
+const items = computed(() => data.value ?? [])
+const itemCount = computed(
+  () => data.value?.reduce((total, item) => total + item.product_quantity, 0) ?? 0,
+)
 
-const emptyProducts = ref<boolean>(false)
+const emptyProducts = computed(() => {
+  return !isLoading.value && items.value.length === 0
+})
 
-const { alertMessage, alertTitle, alertType, showAlert, displayAlertError } = useAlert()
-
-const getCartItems = async () => {
-  try {
-    const cartProductsResponse = await getCartProducts()
-    const cartProducts: CartItemResponse[] = cartProductsResponse.data
-    cartStore.setCartItems(cartProducts)
-    loading.value = false
-    if (items.value.length === 0) {
-      emptyProducts.value = true
-    } else {
-      emptyProducts.value = false
-    }
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al obtener su carrito', errors)
-  }
-}
-
-const updateItemQuantity = async (productId: number, size: string, quantity: number) => {
-  try {
-    const product: CartItemPayload = { product: { product_id: productId }, size, quantity }
-    cartStore.updateItem(product)
-    await updateProductCart(product)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al actualizar su carrito', errors)
-  }
-}
-
-const removeItemFromCart = async (productId: number, size: string) => {
-  try {
-    cartStore.removeItem(productId, size)
-    emptyProducts.value = items.value.length === 0
-    await removeProductFromCart(productId, size)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al eliminar el producto de su carrito', errors)
-  }
-}
-
-const handleClearCart = async () => {
-  try {
-    emptyProducts.value = true
-    cartStore.clearCart()
-    await clearCart()
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al limpiar su carrito', errors)
-  }
-}
+const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
 const handleExploreClick = () => {
   router.push('/products')
 }
 
-onMounted(() => {
-  if (!isAuthenticated.value) {
-    router.push('/login')
-    return
-  }
-
-  getCartItems()
-})
+const handleClearCart = () => {
+  clearCart()
+}
 </script>

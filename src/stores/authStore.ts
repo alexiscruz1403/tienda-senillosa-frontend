@@ -1,8 +1,8 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { jwtDecode } from 'jwt-decode'
-import type { JwtPayload } from '@/types/authTypes'
-import { validateToken, refreshToken } from '@/services/authService'
+import { type JwtPayload } from '@/services/auth.service'
+import { validateToken, refreshToken } from '@/services/auth.service'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('authToken'))

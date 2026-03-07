@@ -8,7 +8,7 @@
           { title: `ORD - ${orderId}`, disabled: true },
         ]"
       />
-      <div class="flex flex-col gap-4 lg:flex-row animate-pulse" v-if="loading">
+      <div class="flex flex-col gap-4 lg:flex-row animate-pulse" v-if="isFetching">
         <!-- LEFT PANEL -->
         <div
           class="bg-white px-8 py-8 rounded-xl flex flex-col gap-8 w-screen lg:min-w-[60%] shadow-md"
@@ -155,45 +155,29 @@
 <script setup lang="ts">
 import AppLayout from '@/layout/AppLayout.vue'
 import OrderSummary from '@/components/OrderSummary.vue'
-import { onMounted, ref } from 'vue'
-import {
-  getUserOrder,
-  type Order,
-  type OrderStatus,
-  type OrderProduct,
-} from '@/services/orderService'
 import { Box, Check, Home, Truck } from 'lucide-vue-next'
-import router from '@/router'
+import { computed } from 'vue'
+import { useOrderQuery } from '@/queries/order.query'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
+import { useRoute } from 'vue-router'
 import { getArgentinaDate } from '@/utils/dateUtils'
 
-const orderId = router.currentRoute.value.params.id
-const order = ref<Order>()
-const orderStatuses = ref<OrderStatus[]>([])
-const orderProducts = ref<OrderProduct[]>([])
+const route = useRoute()
+const orderId = computed(() => Number(route.params.id))
 
-const loading = ref<boolean>(true)
-
-const getOrder = async () => {
-  try {
-    const response = await getUserOrder(Number(orderId))
-    order.value = response.data
-    orderStatuses.value = response.data.order_statuses
-    orderProducts.value = response.data.products
-  } catch (error) {
-    console.error(error)
-    router.push('/profile')
-  } finally {
-    loading.value = false
-  }
-}
+const orderQuery = useOrderQuery(orderId)
+const { data: order, isFetching } = orderQuery
+useQueryErrorHandler(orderQuery)
+const orderStatuses = computed(() => {
+  return order.value?.order_statuses ?? []
+})
+const orderProducts = computed(() => {
+  return order.value?.products ?? []
+})
 
 const getStatusSelectedColor = (statusId: number) => {
   const statusExists = orderStatuses.value.find((status) => status.status.status_id === statusId)
 
   return statusExists ? 'accent-main' : 'text-muted'
 }
-
-onMounted(() => {
-  getOrder()
-})
 </script>

@@ -61,8 +61,8 @@
           <span
             class="absolute top-0 right-0 bg-[#3C83F6] w-4 h-4 rounded-full text-white text-xs text-center font-semibold"
             aria-hidden="true"
-            v-if="itemCount != 0"
-            >{{ itemCount }}</span
+            v-if="!isNaN(cartCount) && cartCount !== 0"
+            >{{ cartCount }}</span
           >
         </v-btn>
         <v-btn icon variant="text" aria-label="Me gustas" color="black" @click="handleLikesClick">
@@ -85,16 +85,20 @@
 <script lang="ts" setup>
 import NavLink from '@/components/NavLink.vue'
 import { User, Menu, ShoppingBag, Heart } from 'lucide-vue-next'
+import { computed } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
-import { useCartStore } from '@/stores/cartStore'
 import { storeToRefs } from 'pinia'
+import { useCartQuery } from '@/queries/cart.query'
 import router from '@/router'
 
 const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
 
-const cartStore = useCartStore()
-const { itemCount } = storeToRefs(cartStore)
+const { data } = useCartQuery()
+const cartCount = computed(() => {
+  if (!data.value) return 0
+  return data.value.reduce((total, item) => total + item.product_quantity, 0)
+})
 
 const handleHomeClick = () => {
   router.push('/')

@@ -104,14 +104,13 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { VForm } from 'vuetify/components'
 import { useAuthStore } from '@/stores/authStore'
-import { useCartStore } from '@/stores/cartStore'
 import { storeToRefs } from 'pinia'
 import {
   login,
   loginWithGoogle,
   type LoginPayload,
   type LoginResponse,
-} from '@/services/authService'
+} from '@/services/auth.service'
 import { handleApiError } from '@/utils/apiUtils'
 
 const valid = ref<boolean>(false)
@@ -123,7 +122,6 @@ const errorMessages = ref<string>('')
 const loading = ref<boolean>(false)
 const form = ref<VForm | null>(null)
 const router = useRouter()
-const cartStore = useCartStore()
 const authStore = useAuthStore()
 const { isAuthenticated } = storeToRefs(authStore)
 
@@ -160,7 +158,6 @@ const loginUser = async (): Promise<LoginResponse | undefined> => {
   try {
     const response = await login(userData)
     authStore.login(response.data.token)
-    cartStore.setItemCount(response.data.cartCount)
   } catch (error) {
     snackbar.value = true
     errorMessages.value = handleApiError(error)

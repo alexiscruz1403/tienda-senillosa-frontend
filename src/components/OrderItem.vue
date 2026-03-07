@@ -70,7 +70,7 @@
 </template>
 <script setup lang="ts">
 import { ChevronRight } from 'lucide-vue-next'
-import { type Order } from '@/services/orderService'
+import { type Order } from '@/services/order.service'
 import { type PublicImage } from '@/types/ImageTypes'
 import { computed } from 'vue'
 import router from '@/router'

@@ -1,6 +1,5 @@
-import { getData, postData } from './api'
-import type { ApiResponse } from './api'
-import type { PublicProduct } from './productService'
+import { getData, postData } from './api.service'
+import type { PublicProduct } from './product.service'
 
 export interface OrderProductPayload {
   product_id: number
@@ -38,14 +37,14 @@ export interface Order {
   order_statuses: OrderStatus[]
 }
 
-export const createOrder = async (products: OrderProductPayload[]): Promise<ApiResponse<Order>> => {
-  return await postData('/orders', { products })
+export const createOrder = async (products: OrderProductPayload[]): Promise<Order> => {
+  return await postData<Order>('/orders', { products }).then((r) => r.data)
 }
 
-export const getUserOrders = async (): Promise<ApiResponse<Order[]>> => {
-  return await getData('/orders', {})
+export const getUserOrders = async (): Promise<Order[]> => {
+  return await getData<Order[]>('/orders', {}).then((r) => r.data)
 }
 
-export const getUserOrder = async (orderId: number): Promise<ApiResponse<Order>> => {
-  return await getData(`/orders/${orderId}`, {})
+export const getUserOrder = async (orderId: number): Promise<Order> => {
+  return await getData<Order>(`/orders/${orderId}`, {}).then((r) => r.data)
 }

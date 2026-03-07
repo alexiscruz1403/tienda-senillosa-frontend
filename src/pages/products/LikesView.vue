@@ -7,7 +7,7 @@
       </div>
       <div
         class="h-full w-full flex flex-col items-center justify-center gap-6"
-        v-if="emptyLikedProducts && !loading"
+        v-if="emptyLikedProducts && !isLoading && !isFetching && !isFetchingNextPage"
       >
         <div class="px-6 py-6 rounded-full bg-[#EDEFF3] max-w-max">
           <Heart :size="50" color="#65758B" />
@@ -44,18 +44,22 @@
               : ''
           "
           :discount="product.discount"
-          @like="handleLikeClick(product.product_id)"
           :isLiked="product.is_liked"
         />
         <div class="px-2" v-for="n in 4" :key="n">
           <v-skeleton-loader
-            v-if="loading"
+            v-if="isLoading || isFetchingNextPage"
             type="image, list-item-three-line"
             class="w-full h-96 flex items-start!"
           />
         </div>
       </div>
-      <v-btn v-if="!loading && page !== 1" color="primary" class="mb-4" @click="getUserLikes">
+      <v-btn
+        v-if="!isLoading && !isFetching && hasNextPage"
+        color="primary"
+        class="mb-4"
+        @click="nextPage"
+      >
         Cargar más
       </v-btn>
       <app-alert
@@ -72,75 +76,30 @@ import AppLayout from '@/layout/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import AppAlert from '@/components/AppAlert.vue'
 import { Heart, ArrowRight } from 'lucide-vue-next'
-import { useAuthStore } from '@/stores/authStore'
-import { storeToRefs } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import router from '@/router'
-import type { PublicProduct } from '@/services/productService'
-import { likeProduct, getLikes } from '@/services/likeService'
 import { useAlert } from '@/composables/useAlert'
-import { handleApiError } from '@/utils/apiUtils'
+import { useLikesQuery } from '@/queries/likes.query'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
 
-const authStore = useAuthStore()
-const { isAuthenticated } = storeToRefs(authStore)
+const likesQuery = useLikesQuery()
+const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isFetching } = likesQuery
+const likedProducts = computed(() => data?.value?.pages.flatMap((page) => page.data) ?? [])
+useQueryErrorHandler(likesQuery)
 
-const loading = ref<boolean>(false)
-const page = ref<number>(1)
+const emptyLikedProducts = computed(() => {
+  return likedProducts.value.length === 0
+})
 
-const likedProducts = ref<PublicProduct[]>([])
-const emptyLikedProducts = ref(true)
+const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
-const { alertMessage, alertTitle, alertType, showAlert, displayAlertError } = useAlert()
+const nextPage = () => {
+  if (hasNextPage) {
+    fetchNextPage()
+  }
+}
 
 const handleExploreClick = () => {
   router.push('/products')
 }
-
-const getUserLikes = async () => {
-  loading.value = true
-  try {
-    const response = await getLikes(page.value)
-    likedProducts.value = [...likedProducts.value, ...response.data.data]
-
-    emptyLikedProducts.value = likedProducts.value.length === 0
-
-    if (response.data.links.next) {
-      page.value += 1
-    } else {
-      page.value = 1
-    }
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al obtener sus Me Gustas', errors)
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleLikeClick = async (productId: number) => {
-  const product: PublicProduct | undefined = likedProducts.value.find(
-    (p) => p.product_id === productId,
-  )
-  try {
-    likedProducts.value = likedProducts.value.filter((product) => product.product_id !== productId)
-    emptyLikedProducts.value = likedProducts.value.length === 0
-
-    await likeProduct(productId)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al dar Me Gusta al producto', errors)
-    if (product) likedProducts.value.push(product)
-  } finally {
-    emptyLikedProducts.value = likedProducts.value.length === 0
-  }
-}
-
-onMounted(() => {
-  if (!isAuthenticated.value) {
-    router.push('/login')
-    return
-  }
-
-  getUserLikes()
-})
 </script>

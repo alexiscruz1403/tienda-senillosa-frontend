@@ -151,7 +151,7 @@ import { VForm } from 'vuetify/components'
 import router from '@/router'
 import { useAuthStore } from '@/stores/authStore'
 import { storeToRefs } from 'pinia'
-import { register, type RegisterPayload, type RegisterResponse } from '@/services/authService'
+import { register, type RegisterPayload, type RegisterResponse } from '@/services/auth.service'
 import { handleApiError } from '@/utils/apiUtils'
 
 const valid = ref<boolean>(false)

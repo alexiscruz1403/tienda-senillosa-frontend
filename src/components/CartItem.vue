@@ -43,7 +43,9 @@
 <script setup lang="ts">
 import ItemCounter from './ItemCounter.vue'
 import { Trash2 } from 'lucide-vue-next'
-import { ref, defineEmits } from 'vue'
+import { ref } from 'vue'
+import { useUpdateCartMutation, useRemoveCartItemMutation } from '@/mutations/cart.mutation'
+import { useMutationErrorHandler } from '@/composables/useMutationErrorHandler'
 import router from '@/router'
 
 const props = defineProps<{
@@ -60,15 +62,18 @@ const props = defineProps<{
 
 const counterModel = ref<number>(props.product_quantity)
 
+const updateCartMutation = useUpdateCartMutation()
+const { mutate: updateCart } = updateCartMutation
+useMutationErrorHandler(updateCartMutation)
+
+const removeCartItemMutation = useRemoveCartItemMutation()
+const { mutate: removeItem } = removeCartItemMutation
+useMutationErrorHandler(removeCartItemMutation)
+
 const calculatePrice = (price: number, discount: number = 0): number => {
   const discountedPrice = (price - (price * discount) / 100).toFixed(2)
   return (parseFloat(discountedPrice) * counterModel.value).toFixed(2) as unknown as number
 }
-
-const emit = defineEmits<{
-  (e: 'update-quantity', productId: number, size: string, quantity: number): void
-  (e: 'remove-item', productId: number, size: string): void
-}>()
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -78,12 +83,20 @@ const handleQuantityChange = (newQuantity: number) => {
   if (debounceTimer) clearTimeout(debounceTimer)
 
   debounceTimer = setTimeout(() => {
-    emit('update-quantity', props.product_id, props.size, newQuantity)
+    updateCart({
+      product_id: props.product_id,
+      product_name: props.name,
+      quantity: newQuantity,
+      size: props.size,
+    })
   }, 500)
 }
 
 const handleRemoveItem = () => {
-  emit('remove-item', props.product_id, props.size)
+  removeItem({
+    productId: props.product_id,
+    size: props.size,
+  })
 }
 
 const handleImageClick = () => {

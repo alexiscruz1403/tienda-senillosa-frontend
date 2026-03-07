@@ -9,7 +9,7 @@
         ]"
       />
 
-      <section class="flex flex-col lg:flex-row px-4 py-4" v-if="loading">
+      <section class="flex flex-col lg:flex-row px-4 py-4" v-if="isFetching">
         <div
           class="h-96 md:h-screen w-full lg:w-5xl bg-black/12 animate-pulse relative rounded-2xl"
         ></div>
@@ -139,7 +139,7 @@
                 variant="outlined"
                 size="large"
                 :color="getLikeButtonColor()"
-                @click="handleLikeClick"
+                @click="handleLikeClick(Number(product?.product_id))"
               >
                 <Heart :size="20" :color="getHeartColor()" :fill="getHeartFill()" />
               </v-btn>
@@ -155,7 +155,7 @@
         <div
           class="grid grid-cols-2 gap-y-4 md:grid-cols-3 lg:grid-cols-4"
           ref="productsCarousel"
-          v-if="loadingRelated"
+          v-if="isFetchingRelated"
         >
           <div class="px-2" v-for="n in 4" :key="n">
             <v-skeleton-loader
@@ -181,7 +181,6 @@
                   : ''
               "
               :discount="product.discount"
-              @like="handleRelatedProductLikeClick(product.product_id)"
               :isLiked="product.is_liked"
             />
           </div>
@@ -203,19 +202,33 @@ import ItemCounter from '@/components/ItemCounter.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import AppAlert from '@/components/AppAlert.vue'
 import { ChevronLeft, ChevronRight, Heart, ShoppingBag } from 'lucide-vue-next'
-import router from '@/router'
-import { getProductById, getRelatedProducts, type PublicProduct } from '@/services/productService'
-import { likeProduct } from '@/services/likeService'
-import { ref, onMounted, computed, watch } from 'vue'
-import { useCartStore } from '@/stores/cartStore'
-import { type CartItemPayload, addProductToCart } from '@/services/cartService'
+import { useProductQuery, useRelatedProductsQuery } from '@/queries/product.query'
+import { ref, computed } from 'vue'
 import { useAlert } from '@/composables/useAlert'
-import { handleApiError } from '@/utils/apiUtils'
+import { useRoute } from 'vue-router'
+import { useLikeProductMutation } from '@/mutations/like.mutations'
+import { useAddToCartMutation } from '@/mutations/cart.mutation'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
+import { useMutationErrorHandler } from '@/composables/useMutationErrorHandler'
 
-const loading = ref<boolean>(true)
-const product = ref<PublicProduct | null>(null)
-const loadingRelated = ref<boolean>(true)
-const relatedProducts = ref<PublicProduct[]>([])
+const route = useRoute()
+const productId = computed(() => Number(route.params.id))
+
+const productQuery = useProductQuery(productId)
+const { data: product, isFetching } = productQuery
+useQueryErrorHandler(productQuery)
+
+const relatedProductsQuery = useRelatedProductsQuery(productId)
+const { data: relatedProducts, isFetching: isFetchingRelated } = relatedProductsQuery
+useQueryErrorHandler(relatedProductsQuery)
+
+const likesMutation = useLikeProductMutation()
+const { mutate: likeProduct } = likesMutation
+useMutationErrorHandler(likesMutation)
+
+const addToCartMutation = useAddToCartMutation()
+const { mutate: addToCart } = addToCartMutation
+useMutationErrorHandler(addToCartMutation)
 
 const selectedImageIndex = ref<number>(0)
 
@@ -223,10 +236,7 @@ const selectedSize = ref<string | null>(null)
 const maxQuantity = ref<number>(0)
 const modelValue = ref<number>(1)
 
-const { alertMessage, alertTitle, alertType, showAlert, displayAlertError, displayAlertSuccess } =
-  useAlert()
-
-const cartStore = useCartStore()
+const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
 const isNew = (): boolean => {
   if (!product.value) return false
@@ -282,6 +292,21 @@ const handleQuantityUpdate = (newValue: number) => {
   modelValue.value = newValue
 }
 
+const handleLikeClick = async (productId: number) => {
+  likeProduct(productId)
+}
+
+const handleCartClick = () => {
+  if (!product.value) return
+
+  addToCart({
+    product_id: product.value?.product_id,
+    product_name: product.value.name,
+    size: selectedSize.value ?? '',
+    quantity: modelValue.value,
+  })
+}
+
 const getLikeButtonColor = (): string => {
   if (!product.value) return ''
 
@@ -299,98 +324,6 @@ const getHeartFill = (): string => {
 
   return product.value.is_liked ? '#3C83F6' : 'transparent'
 }
-
-const handleLikeClick = async () => {
-  if (!product.value) return
-
-  const currentLikeStatus = product.value.is_liked
-
-  try {
-    product.value.is_liked = !currentLikeStatus
-    await likeProduct(product.value.product_id)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al dar Me Gusta al producto', errors)
-    product.value.is_liked = currentLikeStatus
-  }
-}
-
-const handleRelatedProductLikeClick = async (productId: number) => {
-  const relatedProduct = relatedProducts.value.find((p) => p.product_id === productId)
-  if (!relatedProduct) return
-
-  const currentLikeStatus = relatedProduct.is_liked
-
-  try {
-    relatedProduct.is_liked = !currentLikeStatus
-    await likeProduct(relatedProduct.product_id)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al dar Me Gusta al producto', errors)
-    relatedProduct.is_liked = currentLikeStatus
-  }
-}
-
-const handleCartClick = async () => {
-  if (!product.value || !selectedSize.value) return
-
-  try {
-    const cartItem: CartItemPayload = {
-      product: {
-        product_id: product.value.product_id,
-        brand: product.value.brand,
-        name: product.value.name,
-        price: product.value.price,
-        discount: product.value.discount,
-        images: product.value.images,
-      },
-      quantity: modelValue.value,
-      size: selectedSize.value,
-    }
-    cartStore.addItem(cartItem)
-    displayAlertSuccess(
-      'Producto añadido al carrito',
-      `${cartItem.product.name} Talle ${cartItem.size} x ${cartItem.quantity}`,
-    )
-    await addProductToCart(cartItem)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al agregar el producto al carrito', errors)
-  }
-}
-
-const getProduct = async () => {
-  const productId = router.currentRoute.value.params.id
-  const numberedProductId: number = Number(productId) ?? 0
-
-  if (numberedProductId === 0) router.push('/products')
-
-  try {
-    const productResponse = await getProductById(numberedProductId)
-    product.value = productResponse.data
-    const relatedProductsResponse = await getRelatedProducts(numberedProductId)
-    relatedProducts.value = relatedProductsResponse.data
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al obtener el producto', errors)
-  } finally {
-    loading.value = false
-    loadingRelated.value = false
-  }
-}
-
-onMounted(async () => {
-  getProduct()
-})
-
-watch(
-  () => router.currentRoute.value.params.id,
-  () => {
-    loading.value = true
-    loadingRelated.value = true
-    getProduct()
-  },
-)
 
 const discountedPrice = computed(() => {
   if (product.value && product.value.discount) {

@@ -30,26 +30,35 @@
       :alertType="alertType"
       :showAlert="showAlert"
     />
-    <loader-modal :display="loading" message="Procesando compra, por favor espere..." />
+    <loader-modal
+      :display="isLoading || isPending"
+      message="Procesando compra, por favor espere..."
+    />
   </div>
 </template>
 <script setup lang="ts">
 import LoaderModal from './LoaderModal.vue'
 import AppAlert from './AppAlert.vue'
-import { useCartStore } from '@/stores/cartStore'
-import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import { type OrderProductPayload } from '@/services/order.service'
 import { useAlert } from '@/composables/useAlert'
-import { createOrder, type OrderProductPayload } from '@/services/orderService'
-import { handleApiError } from '@/utils/apiUtils'
+import { useCartQuery } from '@/queries/cart.query'
+import { useOrderMutation } from '@/mutations/order.mutation'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
+import { useMutationErrorHandler } from '@/composables/useMutationErrorHandler'
 import router from '@/router'
 
-const cartStore = useCartStore()
-const { items } = storeToRefs(cartStore)
+const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
-const { alertMessage, alertTitle, alertType, showAlert, displayAlertError } = useAlert()
+const cartQuery = useCartQuery()
+const { data, isLoading } = cartQuery
+useQueryErrorHandler(cartQuery)
 
-const loading = ref<boolean>(false)
+const orderMutation = useOrderMutation()
+const { mutate: createOrder, isPending } = orderMutation
+useMutationErrorHandler(orderMutation)
+
+const items = computed(() => data.value ?? [])
 
 const totalPrice = computed(() => {
   const total = items.value.reduce((total, item) => {
@@ -68,25 +77,15 @@ const handleContinueShopping = () => {
 }
 
 const handleCompletePurchase = async () => {
-  loading.value = true
-  try {
-    const payload: OrderProductPayload[] = items.value.map((item) => {
-      const orderProduct: OrderProductPayload = {
-        product_id: item.product.product_id,
-        size: item.stock.size,
-        quantity: item.product_quantity,
-        price: item.product.price,
-      }
-      return orderProduct
-    })
-    const response = await createOrder(payload)
-    cartStore.clearCart()
-    router.push(`/orders/${response.data.order_id}`)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al finalizar su compra', errors)
-  } finally {
-    loading.value = false
-  }
+  const payload: OrderProductPayload[] = items.value.map((item) => {
+    const orderProduct: OrderProductPayload = {
+      product_id: item.product.product_id,
+      size: item.stock.size,
+      quantity: item.product_quantity,
+      price: item.product.price,
+    }
+    return orderProduct
+  })
+  createOrder(payload)
 }
 </script>

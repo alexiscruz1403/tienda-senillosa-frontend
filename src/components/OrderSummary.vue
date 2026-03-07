@@ -19,7 +19,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { type Order } from '@/services/orderService'
+import { type Order } from '@/services/order.service'
 import { computed } from 'vue'
 
 interface Props {

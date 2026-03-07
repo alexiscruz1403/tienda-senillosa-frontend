@@ -232,7 +232,16 @@
         :alertType="alertType"
         :showAlert="showAlert"
       />
-      <loader-modal :display="loading" />
+      <loader-modal
+        :display="
+          isLoadingOrders ||
+          isLoadingUserAddress ||
+          isLoadingUserInfo ||
+          isPendingUserInfo ||
+          isPendingUserAddress ||
+          isPendingPassword
+        "
+      />
     </div>
   </app-layout>
 </template>
@@ -243,39 +252,59 @@ import AppAlert from '@/components/AppAlert.vue'
 import OrderItem from '@/components/OrderItem.vue'
 import { User, LogOut, Save } from 'lucide-vue-next'
 import AppLayout from '@/layout/AppLayout.vue'
-import { ref, onMounted } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { storeToRefs } from 'pinia'
 import type {
   InfoFormPayload,
   AddressFormPayload,
   PasswordFormPayload,
-} from '@/services/userService'
-import {
-  getUserInfo,
-  getUserAddress,
-  updateUserInfo,
-  updateUserAddress,
-  updateUserPassword,
-} from '@/services/userService'
-import { getUserOrders, type Order } from '@/services/orderService'
+} from '@/services/user.service'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useAlert } from '@/composables/useAlert'
 import router from '@/router'
-import { handleApiError } from '@/utils/apiUtils'
+import { useOrdersQuery } from '@/queries/order.query'
+import { useUserInfoQuery, useUserAddressQuery } from '@/queries/user.query'
+import {
+  useUserInfoMutation,
+  useUserAddressMutation,
+  useUserPasswordMutation,
+} from '@/mutations/user.mutation'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
+import { useMutationErrorHandler } from '@/composables/useMutationErrorHandler'
 
-const orders = ref<Order[]>([])
+const orderQuery = useOrdersQuery()
+const { data: ordersData, isLoading: isLoadingOrders } = orderQuery
+useQueryErrorHandler(orderQuery)
+const orders = computed(() => ordersData.value)
+
+const userInfoQuery = useUserInfoQuery()
+const { data: userInfoData, isLoading: isLoadingUserInfo } = userInfoQuery
+useQueryErrorHandler(userInfoQuery)
+
+const userAddressQuery = useUserAddressQuery()
+const { data: userAddressData, isLoading: isLoadingUserAddress } = userAddressQuery
+useQueryErrorHandler(userAddressQuery)
+
+const userInfoMutation = useUserInfoMutation()
+const { mutate: updateUserInfo, isPending: isPendingUserInfo } = userInfoMutation
+useMutationErrorHandler(userInfoMutation)
+
+const userAddressMutation = useUserAddressMutation()
+const { mutate: updateUserAddress, isPending: isPendingUserAddress } = userAddressMutation
+useMutationErrorHandler(userAddressMutation)
+
+const userPasswordMutation = useUserPasswordMutation()
+const { mutate: updateUserPassword, isPending: isPendingPassword } = userPasswordMutation
+useMutationErrorHandler(userPasswordMutation)
 
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
 
 const selectedMenu = ref<string>('profile')
 
-const { alertMessage, alertTitle, alertType, showAlert, displayAlertSuccess, displayAlertError } =
-  useAlert()
-
-const loading = ref<boolean>(false)
+const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
 const hasGoogleId = ref<boolean>(false)
 
@@ -314,17 +343,7 @@ const { value: email, errorMessage: emailError } = useField<string>('email')
 const { value: phone_number, errorMessage: phoneNumberError } = useField<string>('phone_number')
 
 const onInfoSubmit = handleInfoFormSubmit(async (values: InfoFormPayload) => {
-  try {
-    loading.value = true
-    await updateUserInfo(values)
-    displayAlertSuccess('', 'Información actualizada correctamente')
-    await getInfo()
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al actualizar la información', errors)
-  } finally {
-    loading.value = false
-  }
+  updateUserInfo(values)
 })
 
 const addressFormSchema = yup.object({
@@ -375,17 +394,7 @@ const { value: additional_info, errorMessage: additionalInfoError } =
   useField<string>('additional_info')
 
 const onAddressSubmit = handleAddressFormSubmit(async (values: AddressFormPayload) => {
-  try {
-    loading.value = true
-    await updateUserAddress(values)
-    await getAddress()
-    displayAlertSuccess('', 'Dirección actualizada correctamente')
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al actualizar la dirección', errors)
-  } finally {
-    loading.value = false
-  }
+  updateUserAddress(values)
 })
 
 const passwordFormSchema = yup.object({
@@ -416,94 +425,45 @@ const { value: confirm_password, errorMessage: confirmPasswordError } =
   useField<string>('confirm_password')
 
 const onPasswordSubmit = handlePasswordFormSubmit(async (values: PasswordFormPayload) => {
-  try {
-    loading.value = true
-    await updateUserPassword(values)
-    displayAlertSuccess('', 'Contraseña actualizada correctamente')
-    current_password.value = ''
-    new_password.value = ''
-    confirm_password.value = ''
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al actualizar la contraseña', errors)
-  } finally {
-    loading.value = false
-  }
+  updateUserPassword(values)
 })
-
-const getInfo = async () => {
-  try {
-    const response = await getUserInfo()
-    if (response.data !== null && response.data !== undefined) {
-      resetInfoForm({
-        values: {
-          username: response.data.username,
-          email: response.data.email,
-          phone_number: response.data.phone_number || '',
-        },
-      })
-      hasGoogleId.value =
-        response.data.has_google_id !== null && response.data.has_google_id !== undefined
-    }
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al obtener la información', errors)
-  }
-}
-
-const getAddress = async () => {
-  try {
-    const response = await getUserAddress()
-    if (response.data !== null && response.data !== undefined) {
-      resetAddressForm({
-        values: {
-          province: response.data.province,
-          city: response.data.city,
-          postal_code: response.data.postal_code,
-          street: response.data.street,
-          department: response.data.department || '',
-          additional_info: response.data.additional_info || '',
-        },
-      })
-    }
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al obtener la dirección', errors)
-  }
-}
-
-const getOrders = async () => {
-  try {
-    const response = await getUserOrders()
-    if (response.data !== null && response.data !== undefined) {
-      orders.value = response.data
-    }
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al obtener la dirección', errors)
-  }
-}
 
 const handleLogout = () => {
   authStore.logout()
   router.push('/')
 }
 
-const loadData = async () => {
-  loading.value = true
-  try {
-    await getInfo()
-    await getAddress()
-    await getOrders()
-  } catch (error) {
-    console.error('Error al cargar la informacion: ', error)
-    router.push('/login')
-  } finally {
-    loading.value = false
-  }
-}
+watch(
+  userInfoData,
+  (newData) => {
+    if (!newData) return
+    resetInfoForm({
+      values: {
+        username: newData.username,
+        email: newData.email,
+        phone_number: newData.phone_number || '',
+      },
+    })
+    hasGoogleId.value = !!newData.has_google_id
+  },
+  { immediate: true },
+)
 
-onMounted(() => {
-  loadData()
-})
+watch(
+  userAddressData,
+  (newData) => {
+    if (!newData) return
+    resetAddressForm({
+      values: {
+        province: newData.province,
+        city: newData.city,
+        postal_code: newData.postal_code,
+        street: newData.street,
+        department: newData.department || '',
+        additional_info: newData.additional_info || '',
+      },
+    })
+  },
+  { immediate: true },
+)
 </script>
