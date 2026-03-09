@@ -2,15 +2,13 @@ import { postData, getData, putData } from './api.service'
 
 export interface CartItemPayload {
   product_id: number
-  product_name: string
-  quantity: number
   size: string
+  quantity: number
 }
 
 export interface CartItemResponse {
   stock: {
     size: string
-    quantity: number
   }
   product: {
     product_id: number
@@ -31,19 +29,11 @@ export const getCartProducts = async (): Promise<CartItemResponse[]> => {
 }
 
 export const addProductToCart = async (product: CartItemPayload): Promise<CartItemResponse> => {
-  return await postData<CartItemResponse>('/cart/add', {
-    product_id: product.product_id,
-    quantity: product.quantity,
-    size: product.size,
-  }).then((r) => r.data)
+  return await postData<CartItemResponse>('/cart/add', product).then((r) => r.data)
 }
 
 export const updateProductCart = async (product: CartItemPayload): Promise<CartItemResponse> => {
-  return await putData<CartItemResponse>('/cart/update', {
-    product_id: product.product_id,
-    quantity: product.quantity,
-    size: product.size,
-  }).then((r) => r.data)
+  return await putData<CartItemResponse>('/cart/update', product).then((r) => r.data)
 }
 
 export const removeProductFromCart = async (productId: number, size: string): Promise<null> => {

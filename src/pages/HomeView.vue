@@ -65,15 +65,9 @@
         <div class="overflow-hidden">
           <div
             class="grid grid-flow-col auto-cols-[100%] sm:auto-cols-[33.3333%] lg:auto-cols-[25%] transition-transform duration-500 ease-in-out"
-            ref="productsCarousel"
             v-if="isLoading"
           >
-            <div class="px-2" v-for="n in 10" :key="n">
-              <v-skeleton-loader
-                type="image, list-item-three-line"
-                class="w-full h-96 flex items-start!"
-              />
-            </div>
+            <product-card-skeleton :quantity="4" />
           </div>
           <div
             class="grid grid-flow-col auto-cols-[100%] sm:auto-cols-[33.3333%] lg:auto-cols-[25%] transition-transform duration-500 ease-in-out"
@@ -188,10 +182,10 @@
   </app-layout>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import AppLayout from '@/layout/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ProductCardSkeleton from '@/components/skeletons/ProductCardSkeleton.vue'
 import {
   ChevronLeft,
   ChevronRight,
@@ -201,6 +195,7 @@ import {
   Shield,
   RefreshCcw,
 } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue'
 import { useAlert } from '@/composables/useAlert'
 import { useFeaturedProductsQuery } from '@/queries/product.query'
 import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'

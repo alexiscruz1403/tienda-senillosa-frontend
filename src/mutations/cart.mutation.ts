@@ -5,7 +5,7 @@ import {
   removeProductFromCart,
   clearCart,
 } from '@/services/cart.service'
-import { type CartItemResponse } from '@/services/cart.service'
+import { type CartItemResponse, type CartItemPayload } from '@/services/cart.service'
 import { useAlert } from '@/composables/useAlert'
 
 const { displayAlertSuccess } = useAlert()
@@ -13,8 +13,13 @@ const { displayAlertSuccess } = useAlert()
 export const useAddToCartMutation = () => {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: addProductToCart,
+  return useMutation<
+    CartItemResponse,
+    Error,
+    CartItemResponse,
+    { previousCart?: CartItemResponse[] }
+  >({
+    mutationFn: (item) => addProductToCart(mapCartResponseToPayload(item)),
 
     onMutate: async (newItem) => {
       await queryClient.cancelQueries({ queryKey: ['cart'] })
@@ -22,12 +27,13 @@ export const useAddToCartMutation = () => {
       const previousCart = queryClient.getQueryData<CartItemResponse[]>(['cart'])
 
       queryClient.setQueryData<CartItemResponse[]>(['cart'], (old = []) => {
-        displayAlertSuccess(
-          '',
-          `${newItem.product_name} Talle ${newItem.size} x ${newItem.quantity} añadido al carrito`,
-        )
         return [...old, newItem]
       })
+
+      displayAlertSuccess(
+        '',
+        `${newItem.product.name} Talle ${newItem.stock.size} x ${newItem.product_quantity} añadido al carrito`,
+      )
 
       return { previousCart }
     },
@@ -45,8 +51,13 @@ export const useAddToCartMutation = () => {
 export const useUpdateCartMutation = () => {
   const queryClient = useQueryClient()
 
-  return useMutation({
-    mutationFn: updateProductCart,
+  return useMutation<
+    CartItemResponse,
+    Error,
+    CartItemResponse,
+    { previousCart?: CartItemResponse[] }
+  >({
+    mutationFn: (item) => updateProductCart(mapCartResponseToPayload(item)),
 
     onMutate: async (product) => {
       await queryClient.cancelQueries({ queryKey: ['cart'] })
@@ -55,8 +66,9 @@ export const useUpdateCartMutation = () => {
 
       queryClient.setQueryData<CartItemResponse[]>(['cart'], (old = []) =>
         old.map((item) =>
-          item.product.product_id === product.product_id && item.stock.size === product.size
-            ? { ...item, quantity: product.quantity }
+          item.product.product_id === product.product.product_id &&
+          item.stock.size === product.stock.size
+            ? { ...item, product_quantity: product.product_quantity }
             : item,
         ),
       )
@@ -127,4 +139,12 @@ export const useClearCartMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] })
     },
   })
+}
+
+const mapCartResponseToPayload = (item: CartItemResponse): CartItemPayload => {
+  return {
+    product_id: item.product.product_id,
+    size: item.stock.size,
+    quantity: item.product_quantity,
+  }
 }

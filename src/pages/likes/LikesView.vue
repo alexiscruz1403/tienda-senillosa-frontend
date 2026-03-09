@@ -46,13 +46,7 @@
           :discount="product.discount"
           :isLiked="product.is_liked"
         />
-        <div class="px-2" v-for="n in 4" :key="n">
-          <v-skeleton-loader
-            v-if="isLoading || isFetchingNextPage"
-            type="image, list-item-three-line"
-            class="w-full h-96 flex items-start!"
-          />
-        </div>
+        <product-card-skeleton :quantity="4" v-if="isLoading || isFetchingNextPage" />
       </div>
       <v-btn
         v-if="!isLoading && !isFetching && hasNextPage"
@@ -75,6 +69,7 @@
 import AppLayout from '@/layout/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ProductCardSkeleton from '@/components/skeletons/ProductCardSkeleton.vue'
 import { Heart, ArrowRight } from 'lucide-vue-next'
 import { computed } from 'vue'
 import router from '@/router'

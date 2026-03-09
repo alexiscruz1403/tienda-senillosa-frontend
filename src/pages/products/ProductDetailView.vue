@@ -8,41 +8,7 @@
           { title: 'Detalle del Producto', href: '/products/', disabled: true },
         ]"
       />
-
-      <section class="flex flex-col lg:flex-row px-4 py-4" v-if="isFetching">
-        <div
-          class="h-96 md:h-screen w-full lg:w-5xl bg-black/12 animate-pulse relative rounded-2xl"
-        ></div>
-        <div class="flex flex-col gap-4 mt-8 md:mt-0 w-full">
-          <div class="flex flex-col gap-2">
-            <v-skeleton-loader type="heading" class="w-1/3 h-8" color="transparent" />
-            <v-skeleton-loader type="heading" class="w-2/3 h-10" color="transparent" />
-          </div>
-          <v-skeleton-loader type="paragraph" class="w-full h-20" color="transparent" />
-          <div class="flex flex-col gap-6">
-            <div class="flex flex-col gap-2">
-              <v-skeleton-loader type="heading" class="w-1/4 h-6" color="transparent" />
-              <div class="flex gap-1">
-                <v-skeleton-loader
-                  type="button"
-                  class="size-20"
-                  v-for="n in 4"
-                  :key="n"
-                  color="transparent"
-                />
-              </div>
-            </div>
-            <div class="flex flex-col gap-2">
-              <v-skeleton-loader type="heading" class="w-1/4 h-6" color="transparent" />
-              <v-skeleton-loader type="button" class="w-40 h-10" color="transparent" />
-            </div>
-            <div class="flex gap-2">
-              <v-skeleton-loader type="button" class="w-40 h-12" color="transparent" />
-              <v-skeleton-loader type="button" class="w-40 h-12" color="transparent" />
-            </div>
-          </div>
-        </div>
-      </section>
+      <product-detail-skeleton v-if="isFetching" />
       <section class="flex flex-col lg:flex-row gap-2 px-4 py-4" v-else>
         <div class="flex flex-col gap-4 md:gap-2 relative">
           <img
@@ -117,7 +83,7 @@
             <div class="flex flex-col gap-2" v-if="selectedSize">
               <h3 class="font-semibold text-lg">Cantidad</h3>
               <item-counter
-                :model-value="modelValue"
+                :model-value="quantity"
                 :max="maxQuantity"
                 @update="handleQuantityUpdate"
               />
@@ -154,15 +120,9 @@
         </h2>
         <div
           class="grid grid-cols-2 gap-y-4 md:grid-cols-3 lg:grid-cols-4"
-          ref="productsCarousel"
           v-if="isFetchingRelated"
         >
-          <div class="px-2" v-for="n in 4" :key="n">
-            <v-skeleton-loader
-              type="image, list-item-three-line"
-              class="w-full h-96 flex items-start!"
-            />
-          </div>
+          <product-card-skeleton :quantity="4" />
         </div>
         <div
           class="grid grid-cols-2 gap-y-4 md:grid-cols-3 lg:grid-cols-4"
@@ -201,6 +161,8 @@ import SizeButton from '@/components/SizeButton.vue'
 import ItemCounter from '@/components/ItemCounter.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ProductCardSkeleton from '@/components/skeletons/ProductCardSkeleton.vue'
+import ProductDetailSkeleton from '@/components/skeletons/ProductDetailSkeleton.vue'
 import { ChevronLeft, ChevronRight, Heart, ShoppingBag } from 'lucide-vue-next'
 import { useProductQuery, useRelatedProductsQuery } from '@/queries/product.query'
 import { ref, computed } from 'vue'
@@ -234,7 +196,7 @@ const selectedImageIndex = ref<number>(0)
 
 const selectedSize = ref<string | null>(null)
 const maxQuantity = ref<number>(0)
-const modelValue = ref<number>(1)
+const quantity = ref<number>(1)
 
 const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
@@ -289,7 +251,7 @@ const handleSizeClick = (size: string) => {
 }
 
 const handleQuantityUpdate = (newValue: number) => {
-  modelValue.value = newValue
+  quantity.value = newValue
 }
 
 const handleLikeClick = async (productId: number) => {
@@ -297,13 +259,21 @@ const handleLikeClick = async (productId: number) => {
 }
 
 const handleCartClick = () => {
-  if (!product.value) return
+  if (!product.value || !selectedSize.value || !quantity.value) return
 
   addToCart({
-    product_id: product.value?.product_id,
-    product_name: product.value.name,
-    size: selectedSize.value ?? '',
-    quantity: modelValue.value,
+    product: {
+      product_id: product.value.product_id,
+      brand: product.value.brand,
+      name: product.value.name,
+      price: product.value.price,
+      discount: product.value.discount,
+      images: product.value.images,
+    },
+    stock: {
+      size: selectedSize.value,
+    },
+    product_quantity: quantity.value,
   })
 }
 

@@ -59,161 +59,166 @@
         </section>
 
         <!-- Seccion de Mi Perfil -->
-        <section
-          class="bg-white px-4 py-4 flex flex-col gap-8 rounded-lg w-full"
-          v-if="selectedMenu === 'profile'"
-        >
-          <div class="flex flex-col gap-4">
-            <h2 class="text-lg font-semibold">Información Personal</h2>
-            <v-form class="flex flex-col gap-6" @submit.prevent="onInfoSubmit()">
-              <div class="flex flex-col md:grid md:grid-cols-2 gap-6">
+        <profile-skeleton
+          v-if="selectedMenu === 'profile' && (isLoadingUserInfo || isLoadingUserAddress)"
+        />
+        <template v-else>
+          <section
+            class="bg-white px-4 py-4 flex flex-col gap-8 rounded-lg w-full"
+            v-if="selectedMenu === 'profile'"
+          >
+            <div class="flex flex-col gap-4">
+              <h2 class="text-lg font-semibold">Información Personal</h2>
+              <v-form class="flex flex-col gap-6" @submit.prevent="onInfoSubmit()">
+                <div class="flex flex-col md:grid md:grid-cols-2 gap-6">
+                  <custom-input
+                    label="Nombre completo"
+                    placeholder="Juan Perez"
+                    required
+                    v-model:input-value="username"
+                    :error="usernameError"
+                    :disabled="hasGoogleId"
+                    :disclaimer="
+                      hasGoogleId
+                        ? 'Usted no puede cambiar esta información ya que inicio sesión con su cuenta de Google'
+                        : ''
+                    "
+                  />
+                  <custom-input
+                    label="Correo Electronico"
+                    placeholder="juan.perez@gmail.com"
+                    required
+                    v-model:input-value="email"
+                    :error="emailError"
+                    :disabled="hasGoogleId"
+                    :disclaimer="
+                      hasGoogleId
+                        ? 'Usted no puede cambiar esta información ya que inicio sesión con su cuenta de Google'
+                        : ''
+                    "
+                  />
+                  <custom-input
+                    label="Número de teléfono"
+                    placeholder="299123456"
+                    v-model:input-value="phone_number"
+                    :error="phoneNumberError"
+                  />
+                </div>
+                <v-btn
+                  color="primary"
+                  class="max-w-max! self-end!"
+                  type="submit"
+                  :disabled="!metaInfoForm.valid || !metaInfoForm.dirty"
+                >
+                  <template #prepend>
+                    <Save class="h-5 w-5" />
+                  </template>
+                  Guardar Cambios
+                </v-btn>
+              </v-form>
+            </div>
+            <v-divider></v-divider>
+            <div class="flex flex-col gap-4">
+              <h2 class="text-lg font-semibold">Datos para envío</h2>
+              <v-form class="flex flex-col gap-6" @submit.prevent="onAddressSubmit()">
+                <div class="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <custom-input
+                    label="Provincia"
+                    placeholder="Buenos Aires"
+                    required
+                    v-model:input-value="province"
+                    :error="provinceError"
+                  />
+                  <custom-input
+                    label="Ciudad"
+                    placeholder="La Plata"
+                    required
+                    v-model:input-value="city"
+                    :error="cityError"
+                  />
+                  <custom-input
+                    label="Código Postal"
+                    placeholder="1900"
+                    required
+                    v-model:input-value="postal_code"
+                    :error="postalCodeError"
+                  />
+                  <custom-input
+                    label="Calle y Número"
+                    placeholder="Calle 123"
+                    required
+                    v-model:input-value="street"
+                    :error="streetError"
+                  />
+                  <custom-input
+                    label="Departamento"
+                    placeholder="Piso 2, Depto B"
+                    v-model:input-value="department"
+                    :error="departmentError"
+                  />
+                  <custom-input
+                    label="Información Adicional"
+                    placeholder="Entre calles, referencias, etc."
+                    v-model:input-value="additional_info"
+                    :error="additionalInfoError"
+                  />
+                </div>
+                <v-btn
+                  color="primary"
+                  class="max-w-max! self-end!"
+                  type="submit"
+                  :disabled="!metaAddressForm.valid || !metaAddressForm.dirty"
+                >
+                  <template #prepend>
+                    <Save class="h-5 w-5" />
+                  </template>
+                  Guardar Cambios
+                </v-btn>
+              </v-form>
+            </div>
+            <v-divider></v-divider>
+            <div class="flex flex-col gap-4">
+              <h2 class="text-lg font-semibold">Cambiar Contraseña</h2>
+              <v-form class="flex flex-col gap-6 lg:w-[50%]" @submit.prevent="onPasswordSubmit()">
                 <custom-input
-                  label="Nombre completo"
-                  placeholder="Juan Perez"
-                  required
-                  v-model:input-value="username"
-                  :error="usernameError"
-                  :disabled="hasGoogleId"
-                  :disclaimer="
-                    hasGoogleId
-                      ? 'Usted no puede cambiar esta información ya que inicio sesión con su cuenta de Google'
-                      : ''
-                  "
+                  label="Contraseña Actual"
+                  type="password"
+                  placeholder="********"
+                  v-model:input-value="current_password"
+                  :required="true"
+                  :error="currentPasswordError"
                 />
                 <custom-input
-                  label="Correo Electronico"
-                  placeholder="juan.perez@gmail.com"
-                  required
-                  v-model:input-value="email"
-                  :error="emailError"
-                  :disabled="hasGoogleId"
-                  :disclaimer="
-                    hasGoogleId
-                      ? 'Usted no puede cambiar esta información ya que inicio sesión con su cuenta de Google'
-                      : ''
-                  "
+                  label="Nueva Contraseña"
+                  type="password"
+                  placeholder="********"
+                  v-model:input-value="new_password"
+                  :required="true"
+                  :error="newPasswordError"
                 />
                 <custom-input
-                  label="Número de teléfono"
-                  placeholder="299123456"
-                  v-model:input-value="phone_number"
-                  :error="phoneNumberError"
+                  label="Confirmar Nueva Contraseña"
+                  type="password"
+                  placeholder="********"
+                  v-model:input-value="confirm_password"
+                  :required="true"
+                  :error="confirmPasswordError"
                 />
-              </div>
-              <v-btn
-                color="primary"
-                class="max-w-max! self-end!"
-                type="submit"
-                :disabled="!metaInfoForm.valid || !metaInfoForm.dirty"
-              >
-                <template #prepend>
-                  <Save class="h-5 w-5" />
-                </template>
-                Guardar Cambios
-              </v-btn>
-            </v-form>
-          </div>
-          <v-divider></v-divider>
-          <div class="flex flex-col gap-4">
-            <h2 class="text-lg font-semibold">Datos para envío</h2>
-            <v-form class="flex flex-col gap-6" @submit.prevent="onAddressSubmit()">
-              <div class="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <custom-input
-                  label="Provincia"
-                  placeholder="Buenos Aires"
-                  required
-                  v-model:input-value="province"
-                  :error="provinceError"
-                />
-                <custom-input
-                  label="Ciudad"
-                  placeholder="La Plata"
-                  required
-                  v-model:input-value="city"
-                  :error="cityError"
-                />
-                <custom-input
-                  label="Código Postal"
-                  placeholder="1900"
-                  required
-                  v-model:input-value="postal_code"
-                  :error="postalCodeError"
-                />
-                <custom-input
-                  label="Calle y Número"
-                  placeholder="Calle 123"
-                  required
-                  v-model:input-value="street"
-                  :error="streetError"
-                />
-                <custom-input
-                  label="Departamento"
-                  placeholder="Piso 2, Depto B"
-                  v-model:input-value="department"
-                  :error="departmentError"
-                />
-                <custom-input
-                  label="Información Adicional"
-                  placeholder="Entre calles, referencias, etc."
-                  v-model:input-value="additional_info"
-                  :error="additionalInfoError"
-                />
-              </div>
-              <v-btn
-                color="primary"
-                class="max-w-max! self-end!"
-                type="submit"
-                :disabled="!metaAddressForm.valid || !metaAddressForm.dirty"
-              >
-                <template #prepend>
-                  <Save class="h-5 w-5" />
-                </template>
-                Guardar Cambios
-              </v-btn>
-            </v-form>
-          </div>
-          <v-divider></v-divider>
-          <div class="flex flex-col gap-4">
-            <h2 class="text-lg font-semibold">Cambiar Contraseña</h2>
-            <v-form class="flex flex-col gap-6 lg:w-[50%]" @submit.prevent="onPasswordSubmit()">
-              <custom-input
-                label="Contraseña Actual"
-                type="password"
-                placeholder="********"
-                v-model:input-value="current_password"
-                :required="true"
-                :error="currentPasswordError"
-              />
-              <custom-input
-                label="Nueva Contraseña"
-                type="password"
-                placeholder="********"
-                v-model:input-value="new_password"
-                :required="true"
-                :error="newPasswordError"
-              />
-              <custom-input
-                label="Confirmar Nueva Contraseña"
-                type="password"
-                placeholder="********"
-                v-model:input-value="confirm_password"
-                :required="true"
-                :error="confirmPasswordError"
-              />
-              <v-btn
-                color="primary"
-                class="max-w-max! self-end!"
-                type="submit"
-                :disabled="!metaPasswordForm.valid || !metaPasswordForm.dirty"
-              >
-                <template #prepend>
-                  <Save class="h-5 w-5" />
-                </template>
-                Guardar Cambios
-              </v-btn>
-            </v-form>
-          </div>
-        </section>
+                <v-btn
+                  color="primary"
+                  class="max-w-max! self-end!"
+                  type="submit"
+                  :disabled="!metaPasswordForm.valid || !metaPasswordForm.dirty"
+                >
+                  <template #prepend>
+                    <Save class="h-5 w-5" />
+                  </template>
+                  Guardar Cambios
+                </v-btn>
+              </v-form>
+            </div>
+          </section>
+        </template>
 
         <!-- Seccion de mis ordenes -->
         <section
@@ -222,6 +227,7 @@
         >
           <div class="flex flex-col gap-4">
             <h2 class="text-lg font-semibold">Mis Órdenes</h2>
+            <order-item-skeleton v-if="isLoadingOrders" />
             <order-item v-for="order in orders" :order="order" :key="order.order_id" />
           </div>
         </section>
@@ -233,20 +239,16 @@
         :showAlert="showAlert"
       />
       <loader-modal
-        :display="
-          isLoadingOrders ||
-          isLoadingUserAddress ||
-          isLoadingUserInfo ||
-          isPendingUserInfo ||
-          isPendingUserAddress ||
-          isPendingPassword
-        "
+        :display="isPendingPassword || isPendingUserAddress || isPendingUserInfo"
+        message="Guardando cambios, por favor espere..."
       />
     </div>
   </app-layout>
 </template>
 <script setup lang="ts">
 import CustomInput from '@/components/CustomInput.vue'
+import OrderItemSkeleton from '@/components/skeletons/OrderItemSkeleton.vue'
+import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton.vue'
 import LoaderModal from '@/components/LoaderModal.vue'
 import AppAlert from '@/components/AppAlert.vue'
 import OrderItem from '@/components/OrderItem.vue'

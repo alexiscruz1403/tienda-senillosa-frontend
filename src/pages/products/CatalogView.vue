@@ -150,13 +150,7 @@
               :discount="product.discount"
               :isLiked="product.is_liked"
             />
-            <div class="px-2" v-for="n in 10" :key="n">
-              <v-skeleton-loader
-                v-if="isLoading || isFetchingNextPage"
-                type="image, list-item-three-line"
-                class="w-full h-96 flex items-start!"
-              />
-            </div>
+            <product-card-skeleton v-if="isLoading || isFetchingNextPage" :quantity="10" />
           </div>
           <div
             v-if="products.length === 0 && !isLoading"
@@ -266,6 +260,7 @@
 import AppLayout from '@/layout/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ProductCardSkeleton from '@/components/skeletons/ProductCardSkeleton.vue'
 import { Search, Funnel, X, SearchX } from 'lucide-vue-next'
 import { ref, reactive, computed, watch } from 'vue'
 import { useAlert } from '@/composables/useAlert'
