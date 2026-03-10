@@ -227,8 +227,14 @@
         >
           <div class="flex flex-col gap-4">
             <h2 class="text-lg font-semibold">Mis Órdenes</h2>
-            <order-item-skeleton v-if="isLoadingOrders" />
             <order-item v-for="order in orders" :order="order" :key="order.order_id" />
+            <order-item-skeleton v-if="isLoadingOrders || isFetchingNextPage" />
+            <v-btn
+              @click="nextPage"
+              color="primary"
+              v-if="!isLoadingOrders && hasNextPage && !isFetchingNextPage"
+              >Cargar más</v-btn
+            >
           </div>
         </section>
       </div>
@@ -277,9 +283,15 @@ import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
 import { useMutationErrorHandler } from '@/composables/useMutationErrorHandler'
 
 const orderQuery = useOrdersQuery()
-const { data: ordersData, isLoading: isLoadingOrders } = orderQuery
+const {
+  data: ordersData,
+  isLoading: isLoadingOrders,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+} = orderQuery
 useQueryErrorHandler(orderQuery)
-const orders = computed(() => ordersData.value)
+const orders = computed(() => ordersData?.value?.pages.flatMap((page) => page.data) ?? [])
 
 const userInfoQuery = useUserInfoQuery()
 const { data: userInfoData, isLoading: isLoadingUserInfo } = userInfoQuery
@@ -433,6 +445,12 @@ const onPasswordSubmit = handlePasswordFormSubmit(async (values: PasswordFormPay
 const handleLogout = () => {
   authStore.logout()
   router.push('/')
+}
+
+const nextPage = () => {
+  if (hasNextPage) {
+    fetchNextPage()
+  }
 }
 
 watch(

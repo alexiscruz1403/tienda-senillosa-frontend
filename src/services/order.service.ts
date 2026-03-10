@@ -37,12 +37,28 @@ export interface Order {
   order_statuses: OrderStatus[]
 }
 
+export interface OrderPaginated {
+  data: Order[]
+  links: {
+    self: string
+    prev: string | null
+    next: string | null
+  }
+  meta: {
+    total: number
+    count: number
+    per_page: number
+    current_page: number
+    total_pages: number
+  }
+}
+
 export const createOrder = async (products: OrderProductPayload[]): Promise<Order> => {
   return await postData<Order>('/orders', { products }).then((r) => r.data)
 }
 
-export const getUserOrders = async (): Promise<Order[]> => {
-  return await getData<Order[]>('/orders', {}).then((r) => r.data)
+export const getUserOrders = async (page: number): Promise<OrderPaginated> => {
+  return await getData<OrderPaginated>('/orders', { page }).then((r) => r.data)
 }
 
 export const getUserOrder = async (orderId: number): Promise<Order> => {
