@@ -14,7 +14,7 @@
             class="w-full"
             hide-details
             density="comfortable"
-            v-model="searchValue"
+            v-model="params.search"
           >
             <template #prepend-inner>
               <Search class="w-5 h-5 text-gray-400 mr-2" />
@@ -29,7 +29,7 @@
               <span>Filtros</span>
             </button>
             <v-select
-              v-model="orderingValue"
+              v-model="params.ordering"
               :items="orderingItems"
               variant="outlined"
               class="w-48 ml-4"
@@ -48,7 +48,7 @@
               class="w-full"
               hide-details
               density="comfortable"
-              v-model="searchValue"
+              v-model="params.search"
             >
               <template #prepend-inner>
                 <Search class="w-5 h-5 text-gray-400 mr-2" />
@@ -60,49 +60,49 @@
                 <h3 class="text-lg font-semibold">Categoría</h3>
                 <div class="flex flex-col">
                   <v-checkbox
-                    v-model="categoryFilterValue"
+                    v-model="params.category"
                     label="Remeras"
                     value="remeras"
                     density="compact"
                     hide-details
                   ></v-checkbox>
                   <v-checkbox
-                    v-model="categoryFilterValue"
+                    v-model="params.category"
                     label="Camisas"
                     value="camisas"
                     density="compact"
                     hide-details
                   ></v-checkbox>
                   <v-checkbox
-                    v-model="categoryFilterValue"
+                    v-model="params.category"
                     label="Pantalones"
                     value="pantalones"
                     density="compact"
                     hide-details
                   ></v-checkbox>
                   <v-checkbox
-                    v-model="categoryFilterValue"
+                    v-model="params.category"
                     label="Shorts"
                     value="shorts"
                     density="compact"
                     hide-details
                   ></v-checkbox>
                   <v-checkbox
-                    v-model="categoryFilterValue"
+                    v-model="params.category"
                     label="Buzos"
                     value="buzos"
                     density="compact"
                     hide-details
                   ></v-checkbox>
                   <v-checkbox
-                    v-model="categoryFilterValue"
+                    v-model="params.category"
                     label="Camperas"
                     value="camperas"
                     density="compact"
                     hide-details
                   ></v-checkbox>
                   <v-checkbox
-                    v-model="categoryFilterValue"
+                    v-model="params.category"
                     label="Zapatillas"
                     value="zapatillas"
                     density="compact"
@@ -112,7 +112,7 @@
               </div>
               <div class="flex flex-col gap-1">
                 <h3 class="text-lg font-semibold">Género</h3>
-                <v-radio-group v-model="genderFilterValue">
+                <v-radio-group v-model="params.gender">
                   <v-radio label="Masculino" value="masculino" />
                   <v-radio label="Femenino" value="femenino" />
                   <v-radio label="Unisex" value="unisex" />
@@ -127,7 +127,7 @@
 
         <div class="flex flex-col gap-6 w-full">
           <v-select
-            v-model="orderingValue"
+            v-model="params.ordering"
             :items="orderingItems"
             variant="outlined"
             class="w-48"
@@ -148,25 +148,23 @@
                   : ''
               "
               :discount="product.discount"
-              @like="handleProductLike"
               :isLiked="product.is_liked"
             />
-            <div class="px-2" v-for="n in 10" :key="n">
-              <v-skeleton-loader
-                v-if="loading"
-                type="image, list-item-three-line"
-                class="w-full h-96 flex items-start!"
-              />
-            </div>
+            <product-card-skeleton v-if="isLoading || isFetchingNextPage" :quantity="10" />
           </div>
           <div
-            v-if="products.length === 0 && !loading"
+            v-if="products.length === 0 && !isLoading"
             class="w-full h-full flex flex-col items-center justify-center text-[#65758B] md:text-xl gap-2"
           >
             <SearchX :size="60" />
             <p>No hay productos disponibles que coincidan con los filtros aplicados</p>
           </div>
-          <v-btn @click="getCatalog" color="primary" v-if="!loading && page != 1">Cargar más</v-btn>
+          <v-btn
+            @click="nextPage"
+            color="primary"
+            v-if="!isLoading && hasNextPage && !isFetchingNextPage"
+            >Cargar más</v-btn
+          >
         </div>
       </div>
 
@@ -185,49 +183,49 @@
               <h3 class="text-lg font-semibold">Categoría</h3>
               <div class="flex flex-col">
                 <v-checkbox
-                  v-model="categoryFilterValue"
+                  v-model="params.category"
                   label="Remeras"
                   value="remeras"
                   density="compact"
                   hide-details
                 ></v-checkbox>
                 <v-checkbox
-                  v-model="categoryFilterValue"
+                  v-model="params.category"
                   label="Camisas"
                   value="camisas"
                   density="compact"
                   hide-details
                 ></v-checkbox>
                 <v-checkbox
-                  v-model="categoryFilterValue"
+                  v-model="params.category"
                   label="Pantalones"
                   value="pantalones"
                   density="compact"
                   hide-details
                 ></v-checkbox>
                 <v-checkbox
-                  v-model="categoryFilterValue"
+                  v-model="params.category"
                   label="Shorts"
                   value="shorts"
                   density="compact"
                   hide-details
                 ></v-checkbox>
                 <v-checkbox
-                  v-model="categoryFilterValue"
+                  v-model="params.category"
                   label="Buzos"
                   value="buzos"
                   density="compact"
                   hide-details
                 ></v-checkbox>
                 <v-checkbox
-                  v-model="categoryFilterValue"
+                  v-model="params.category"
                   label="Camperas"
                   value="camperas"
                   density="compact"
                   hide-details
                 ></v-checkbox>
                 <v-checkbox
-                  v-model="categoryFilterValue"
+                  v-model="params.category"
                   label="Zapatillas"
                   value="zapatillas"
                   density="compact"
@@ -237,7 +235,7 @@
             </div>
             <div class="flex flex-col gap-1">
               <h3 class="text-lg font-semibold">Género</h3>
-              <v-radio-group v-model="genderFilterValue">
+              <v-radio-group v-model="params.gender">
                 <v-radio label="Masculino" value="masculino"></v-radio>
                 <v-radio label="Femenino" value="femenino"></v-radio>
                 <v-radio label="Unisex" value="unisex"></v-radio>
@@ -262,20 +260,32 @@
 import AppLayout from '@/layout/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ProductCardSkeleton from '@/components/skeletons/ProductCardSkeleton.vue'
 import { Search, Funnel, X, SearchX } from 'lucide-vue-next'
-import { ref, onMounted, watch } from 'vue'
-import type { PublicProduct } from '@/services/productService'
-import { likeProduct } from '@/services/likeService'
+import { ref, reactive, computed, watch } from 'vue'
 import { useAlert } from '@/composables/useAlert'
-import { handleApiError } from '@/utils/apiUtils'
-import { getProductCatalog, type ProductCatalogParams } from '@/services/productService'
+import { useProductsQuery } from '@/queries/product.query'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
 
-const loading = ref<boolean>(true)
-const products = ref<PublicProduct[]>([])
+const params = reactive({
+  search: '',
+  category: [],
+  gender: '',
+  ordering: '',
+})
 
-const searchValue = ref<string>('')
+const queryParams = ref({
+  search: '',
+  category: [],
+  gender: '',
+  ordering: '',
+})
 
-const orderingValue = ref<string>('best_selling')
+const productsQuery = useProductsQuery(queryParams)
+const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = productsQuery
+const products = computed(() => data?.value?.pages.flatMap((page) => page.data) ?? [])
+useQueryErrorHandler(productsQuery)
+
 const orderingItems = [
   { title: 'Más vendido', value: 'best_selling' },
   { title: 'Más nuevo', value: 'newest' },
@@ -284,104 +294,44 @@ const orderingItems = [
 ]
 
 const displayFilterSidebar = ref<boolean>(false)
-const categoryFilterValue = ref<string[]>([])
-const genderFilterValue = ref<string>('')
 
-const matchesFound = ref<number>(0)
-const page = ref<number>(1)
+const matchesFound = computed(() => data.value?.pages[0]?.meta?.total ?? 0)
 
-const { alertMessage, alertTitle, alertType, showAlert, displayAlertError } = useAlert()
-
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
-
-let abortController: AbortController | null = null
+const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
 const handleFilterButtonClick = () => {
   displayFilterSidebar.value = !displayFilterSidebar.value
 }
 
-const handleProductLike = async (productId: number) => {
-  const product = products.value.find((p) => p.product_id === productId)
-  if (!product) return
-
-  const currentLikeStatus = product.is_liked
-
-  try {
-    product.is_liked = !currentLikeStatus
-    await likeProduct(product.product_id)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al dar Me Gusta al producto', errors)
-    product.is_liked = currentLikeStatus
-  }
-}
-
-const getCatalog = async () => {
-  loading.value = true
-
-  if (abortController) {
-    abortController.abort()
-  }
-
-  abortController = new AbortController()
-
-  try {
-    const params: ProductCatalogParams = {
-      search: searchValue.value,
-      category: categoryFilterValue.value,
-      gender: genderFilterValue.value,
-      ordering: orderingValue.value,
-      page: page.value,
-    }
-    const response = await getProductCatalog(params, abortController)
-
-    products.value = [...products.value, ...response.data.data]
-
-    matchesFound.value = response.data.meta.total
-    if (response.data.links.next) {
-      page.value += 1
-    } else {
-      page.value = 1
-    }
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      return
-    }
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al obtener el catálogo de productos', errors)
-  } finally {
-    loading.value = false
-  }
+const activeFilters = (): boolean => {
+  return params.search !== '' || params.category.length > 0 || params.gender !== ''
 }
 
 const clearFilters = () => {
-  searchValue.value = ''
-  categoryFilterValue.value = []
-  genderFilterValue.value = ''
-  page.value = 1
+  params.search = ''
+  params.category = []
+  params.gender = ''
+  params.ordering = ''
 }
 
-const activeFilters = (): boolean => {
-  return (
-    searchValue.value !== '' ||
-    categoryFilterValue.value.length > 0 ||
-    genderFilterValue.value !== ''
-  )
-}
-
-onMounted(() => {
-  getCatalog()
-})
-
-watch([searchValue, categoryFilterValue, genderFilterValue, orderingValue], () => {
-  if (debounceTimer) {
-    clearTimeout(debounceTimer)
+const nextPage = () => {
+  if (hasNextPage) {
+    fetchNextPage()
   }
+}
 
-  debounceTimer = setTimeout(() => {
-    products.value = []
-    page.value = 1
-    getCatalog()
-  }, 500)
-})
+let timeout: ReturnType<typeof setTimeout>
+
+watch(
+  () => [params.search, params.category, params.gender, params.ordering],
+  () => {
+    clearTimeout(timeout)
+
+    timeout = setTimeout(() => {
+      queryParams.value = {
+        ...params,
+      }
+    }, 500)
+  },
+)
 </script>

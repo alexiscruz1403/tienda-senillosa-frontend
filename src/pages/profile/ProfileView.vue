@@ -59,156 +59,182 @@
         </section>
 
         <!-- Seccion de Mi Perfil -->
-        <section class="bg-white px-4 py-4 flex flex-col gap-8 rounded-lg w-full">
+        <profile-skeleton
+          v-if="selectedMenu === 'profile' && (isLoadingUserInfo || isLoadingUserAddress)"
+        />
+        <template v-else>
+          <section
+            class="bg-white px-4 py-4 flex flex-col gap-8 rounded-lg w-full"
+            v-if="selectedMenu === 'profile'"
+          >
+            <div class="flex flex-col gap-4">
+              <h2 class="text-lg font-semibold">Información Personal</h2>
+              <v-form class="flex flex-col gap-6" @submit.prevent="onInfoSubmit()">
+                <div class="flex flex-col md:grid md:grid-cols-2 gap-6">
+                  <custom-input
+                    label="Nombre completo"
+                    placeholder="Juan Perez"
+                    required
+                    v-model:input-value="username"
+                    :error="usernameError"
+                    :disabled="hasGoogleId"
+                    :disclaimer="
+                      hasGoogleId
+                        ? 'Usted no puede cambiar esta información ya que inicio sesión con su cuenta de Google'
+                        : ''
+                    "
+                  />
+                  <custom-input
+                    label="Correo Electronico"
+                    placeholder="juan.perez@gmail.com"
+                    required
+                    v-model:input-value="email"
+                    :error="emailError"
+                    :disabled="hasGoogleId"
+                    :disclaimer="
+                      hasGoogleId
+                        ? 'Usted no puede cambiar esta información ya que inicio sesión con su cuenta de Google'
+                        : ''
+                    "
+                  />
+                  <custom-input
+                    label="Número de teléfono"
+                    placeholder="299123456"
+                    v-model:input-value="phone_number"
+                    :error="phoneNumberError"
+                  />
+                </div>
+                <v-btn
+                  color="primary"
+                  class="max-w-max! self-end!"
+                  type="submit"
+                  :disabled="!metaInfoForm.valid || !metaInfoForm.dirty"
+                >
+                  <template #prepend>
+                    <Save class="h-5 w-5" />
+                  </template>
+                  Guardar Cambios
+                </v-btn>
+              </v-form>
+            </div>
+            <v-divider></v-divider>
+            <div class="flex flex-col gap-4">
+              <h2 class="text-lg font-semibold">Datos para envío</h2>
+              <v-form class="flex flex-col gap-6" @submit.prevent="onAddressSubmit()">
+                <div class="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <custom-input
+                    label="Provincia"
+                    placeholder="Buenos Aires"
+                    required
+                    v-model:input-value="province"
+                    :error="provinceError"
+                  />
+                  <custom-input
+                    label="Ciudad"
+                    placeholder="La Plata"
+                    required
+                    v-model:input-value="city"
+                    :error="cityError"
+                  />
+                  <custom-input
+                    label="Código Postal"
+                    placeholder="1900"
+                    required
+                    v-model:input-value="postal_code"
+                    :error="postalCodeError"
+                  />
+                  <custom-input
+                    label="Calle y Número"
+                    placeholder="Calle 123"
+                    required
+                    v-model:input-value="street"
+                    :error="streetError"
+                  />
+                  <custom-input
+                    label="Departamento"
+                    placeholder="Piso 2, Depto B"
+                    v-model:input-value="department"
+                    :error="departmentError"
+                  />
+                  <custom-input
+                    label="Información Adicional"
+                    placeholder="Entre calles, referencias, etc."
+                    v-model:input-value="additional_info"
+                    :error="additionalInfoError"
+                  />
+                </div>
+                <v-btn
+                  color="primary"
+                  class="max-w-max! self-end!"
+                  type="submit"
+                  :disabled="!metaAddressForm.valid || !metaAddressForm.dirty"
+                >
+                  <template #prepend>
+                    <Save class="h-5 w-5" />
+                  </template>
+                  Guardar Cambios
+                </v-btn>
+              </v-form>
+            </div>
+            <v-divider></v-divider>
+            <div class="flex flex-col gap-4">
+              <h2 class="text-lg font-semibold">Cambiar Contraseña</h2>
+              <v-form class="flex flex-col gap-6 lg:w-[50%]" @submit.prevent="onPasswordSubmit()">
+                <custom-input
+                  label="Contraseña Actual"
+                  type="password"
+                  placeholder="********"
+                  v-model:input-value="current_password"
+                  :required="true"
+                  :error="currentPasswordError"
+                />
+                <custom-input
+                  label="Nueva Contraseña"
+                  type="password"
+                  placeholder="********"
+                  v-model:input-value="new_password"
+                  :required="true"
+                  :error="newPasswordError"
+                />
+                <custom-input
+                  label="Confirmar Nueva Contraseña"
+                  type="password"
+                  placeholder="********"
+                  v-model:input-value="confirm_password"
+                  :required="true"
+                  :error="confirmPasswordError"
+                />
+                <v-btn
+                  color="primary"
+                  class="max-w-max! self-end!"
+                  type="submit"
+                  :disabled="!metaPasswordForm.valid || !metaPasswordForm.dirty"
+                >
+                  <template #prepend>
+                    <Save class="h-5 w-5" />
+                  </template>
+                  Guardar Cambios
+                </v-btn>
+              </v-form>
+            </div>
+          </section>
+        </template>
+
+        <!-- Seccion de mis ordenes -->
+        <section
+          class="bg-white px-4 py-4 flex flex-col gap-8 rounded-lg w-full"
+          v-if="selectedMenu === 'orders'"
+        >
           <div class="flex flex-col gap-4">
-            <h2 class="text-lg font-semibold">Información Personal</h2>
-            <v-form class="flex flex-col gap-6" @submit.prevent="onInfoSubmit()">
-              <div class="flex flex-col md:grid md:grid-cols-2 gap-6">
-                <custom-input
-                  label="Nombre completo"
-                  placeholder="Juan Perez"
-                  required
-                  v-model:input-value="username"
-                  :error="usernameError"
-                  :disabled="hasGoogleId"
-                  :disclaimer="
-                    hasGoogleId
-                      ? 'Usted no puede cambiar esta información ya que inicio sesión con su cuenta de Google'
-                      : ''
-                  "
-                />
-                <custom-input
-                  label="Correo Electronico"
-                  placeholder="juan.perez@gmail.com"
-                  required
-                  v-model:input-value="email"
-                  :error="emailError"
-                  :disabled="hasGoogleId"
-                  :disclaimer="
-                    hasGoogleId
-                      ? 'Usted no puede cambiar esta información ya que inicio sesión con su cuenta de Google'
-                      : ''
-                  "
-                />
-                <custom-input
-                  label="Número de teléfono"
-                  placeholder="299123456"
-                  v-model:input-value="phone_number"
-                  :error="phoneNumberError"
-                />
-              </div>
-              <v-btn
-                color="primary"
-                class="max-w-max! self-end!"
-                type="submit"
-                :disabled="!metaInfoForm.valid || !metaInfoForm.dirty"
-              >
-                <template #prepend>
-                  <Save class="h-5 w-5" />
-                </template>
-                Guardar Cambios
-              </v-btn>
-            </v-form>
-          </div>
-          <v-divider></v-divider>
-          <div class="flex flex-col gap-4">
-            <h2 class="text-lg font-semibold">Datos para envío</h2>
-            <v-form class="flex flex-col gap-6" @submit.prevent="onAddressSubmit()">
-              <div class="flex flex-col md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <custom-input
-                  label="Provincia"
-                  placeholder="Buenos Aires"
-                  required
-                  v-model:input-value="province"
-                  :error="provinceError"
-                />
-                <custom-input
-                  label="Ciudad"
-                  placeholder="La Plata"
-                  required
-                  v-model:input-value="city"
-                  :error="cityError"
-                />
-                <custom-input
-                  label="Código Postal"
-                  placeholder="1900"
-                  required
-                  v-model:input-value="postal_code"
-                  :error="postalCodeError"
-                />
-                <custom-input
-                  label="Calle y Número"
-                  placeholder="Calle 123"
-                  required
-                  v-model:input-value="street"
-                  :error="streetError"
-                />
-                <custom-input
-                  label="Departamento"
-                  placeholder="Piso 2, Depto B"
-                  v-model:input-value="department"
-                  :error="departmentError"
-                />
-                <custom-input
-                  label="Información Adicional"
-                  placeholder="Entre calles, referencias, etc."
-                  v-model:input-value="additional_info"
-                  :error="additionalInfoError"
-                />
-              </div>
-              <v-btn
-                color="primary"
-                class="max-w-max! self-end!"
-                type="submit"
-                :disabled="!metaAddressForm.valid || !metaAddressForm.dirty"
-              >
-                <template #prepend>
-                  <Save class="h-5 w-5" />
-                </template>
-                Guardar Cambios
-              </v-btn>
-            </v-form>
-          </div>
-          <v-divider></v-divider>
-          <div class="flex flex-col gap-4">
-            <h2 class="text-lg font-semibold">Cambiar Contraseña</h2>
-            <v-form class="flex flex-col gap-6 lg:w-[50%]" @submit.prevent="onPasswordSubmit()">
-              <custom-input
-                label="Contraseña Actual"
-                type="password"
-                placeholder="********"
-                v-model:input-value="current_password"
-                :required="true"
-                :error="currentPasswordError"
-              />
-              <custom-input
-                label="Nueva Contraseña"
-                type="password"
-                placeholder="********"
-                v-model:input-value="new_password"
-                :required="true"
-                :error="newPasswordError"
-              />
-              <custom-input
-                label="Confirmar Nueva Contraseña"
-                type="password"
-                placeholder="********"
-                v-model:input-value="confirm_password"
-                :required="true"
-                :error="confirmPasswordError"
-              />
-              <v-btn
-                color="primary"
-                class="max-w-max! self-end!"
-                type="submit"
-                :disabled="!metaPasswordForm.valid || !metaPasswordForm.dirty"
-              >
-                <template #prepend>
-                  <Save class="h-5 w-5" />
-                </template>
-                Guardar Cambios
-              </v-btn>
-            </v-form>
+            <h2 class="text-lg font-semibold">Mis Órdenes</h2>
+            <order-item v-for="order in orders" :order="order" :key="order.order_id" />
+            <order-item-skeleton v-if="isLoadingOrders || isFetchingNextPage" />
+            <v-btn
+              @click="nextPage"
+              color="primary"
+              v-if="!isLoadingOrders && hasNextPage && !isFetchingNextPage"
+              >Cargar más</v-btn
+            >
           </div>
         </section>
       </div>
@@ -218,46 +244,81 @@
         :alertType="alertType"
         :showAlert="showAlert"
       />
-      <loader-modal :display="loading" />
+      <loader-modal
+        :display="isPendingPassword || isPendingUserAddress || isPendingUserInfo"
+        message="Guardando cambios, por favor espere..."
+      />
     </div>
   </app-layout>
 </template>
 <script setup lang="ts">
 import CustomInput from '@/components/CustomInput.vue'
+import OrderItemSkeleton from '@/components/skeletons/OrderItemSkeleton.vue'
+import ProfileSkeleton from '@/components/skeletons/ProfileSkeleton.vue'
 import LoaderModal from '@/components/LoaderModal.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import OrderItem from '@/components/OrderItem.vue'
 import { User, LogOut, Save } from 'lucide-vue-next'
 import AppLayout from '@/layout/AppLayout.vue'
-import { ref, onMounted } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { storeToRefs } from 'pinia'
 import type {
   InfoFormPayload,
   AddressFormPayload,
   PasswordFormPayload,
-} from '@/services/userService'
-import {
-  getUserInfo,
-  getUserAddress,
-  updateUserInfo,
-  updateUserAddress,
-  updateUserPassword,
-} from '@/services/userService'
+} from '@/services/user.service'
 import { useForm, useField } from 'vee-validate'
 import * as yup from 'yup'
 import { useAlert } from '@/composables/useAlert'
 import router from '@/router'
-import { handleApiError } from '@/utils/apiUtils'
+import { useOrdersQuery } from '@/queries/order.query'
+import { useUserInfoQuery, useUserAddressQuery } from '@/queries/user.query'
+import {
+  useUserInfoMutation,
+  useUserAddressMutation,
+  useUserPasswordMutation,
+} from '@/mutations/user.mutation'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
+import { useMutationErrorHandler } from '@/composables/useMutationErrorHandler'
+
+const orderQuery = useOrdersQuery()
+const {
+  data: ordersData,
+  isLoading: isLoadingOrders,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+} = orderQuery
+useQueryErrorHandler(orderQuery)
+const orders = computed(() => ordersData?.value?.pages.flatMap((page) => page.data) ?? [])
+
+const userInfoQuery = useUserInfoQuery()
+const { data: userInfoData, isLoading: isLoadingUserInfo } = userInfoQuery
+useQueryErrorHandler(userInfoQuery)
+
+const userAddressQuery = useUserAddressQuery()
+const { data: userAddressData, isLoading: isLoadingUserAddress } = userAddressQuery
+useQueryErrorHandler(userAddressQuery)
+
+const userInfoMutation = useUserInfoMutation()
+const { mutate: updateUserInfo, isPending: isPendingUserInfo } = userInfoMutation
+useMutationErrorHandler(userInfoMutation)
+
+const userAddressMutation = useUserAddressMutation()
+const { mutate: updateUserAddress, isPending: isPendingUserAddress } = userAddressMutation
+useMutationErrorHandler(userAddressMutation)
+
+const userPasswordMutation = useUserPasswordMutation()
+const { mutate: updateUserPassword, isPending: isPendingPassword } = userPasswordMutation
+useMutationErrorHandler(userPasswordMutation)
 
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
 
 const selectedMenu = ref<string>('profile')
 
-const { alertMessage, alertTitle, alertType, showAlert, displayAlertSuccess, displayAlertError } =
-  useAlert()
-
-const loading = ref<boolean>(false)
+const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
 const hasGoogleId = ref<boolean>(false)
 
@@ -296,14 +357,7 @@ const { value: email, errorMessage: emailError } = useField<string>('email')
 const { value: phone_number, errorMessage: phoneNumberError } = useField<string>('phone_number')
 
 const onInfoSubmit = handleInfoFormSubmit(async (values: InfoFormPayload) => {
-  try {
-    await updateUserInfo(values)
-    displayAlertSuccess('', 'Información actualizada correctamente')
-    await getInfo()
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al actualizar la información', errors)
-  }
+  updateUserInfo(values)
 })
 
 const addressFormSchema = yup.object({
@@ -354,14 +408,7 @@ const { value: additional_info, errorMessage: additionalInfoError } =
   useField<string>('additional_info')
 
 const onAddressSubmit = handleAddressFormSubmit(async (values: AddressFormPayload) => {
-  try {
-    await updateUserAddress(values)
-    displayAlertSuccess('', 'Dirección actualizada correctamente')
-    await getAddress()
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al actualizar la dirección', errors)
-  }
+  updateUserAddress(values)
 })
 
 const passwordFormSchema = yup.object({
@@ -392,77 +439,51 @@ const { value: confirm_password, errorMessage: confirmPasswordError } =
   useField<string>('confirm_password')
 
 const onPasswordSubmit = handlePasswordFormSubmit(async (values: PasswordFormPayload) => {
-  try {
-    await updateUserPassword(values)
-    displayAlertSuccess('', 'Contraseña actualizada correctamente')
-    current_password.value = ''
-    new_password.value = ''
-    confirm_password.value = ''
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al actualizar la contraseña', errors)
-  }
+  updateUserPassword(values)
 })
-
-const getInfo = async () => {
-  try {
-    const response = await getUserInfo()
-    if (response.data !== null && response.data !== undefined) {
-      resetInfoForm({
-        values: {
-          username: response.data.username,
-          email: response.data.email,
-          phone_number: response.data.phone_number || '',
-        },
-      })
-      hasGoogleId.value =
-        response.data.has_google_id !== null && response.data.has_google_id !== undefined
-    }
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al obtener la información', errors)
-  }
-}
-
-const getAddress = async () => {
-  try {
-    const response = await getUserAddress()
-    if (response.data !== null && response.data !== undefined) {
-      resetAddressForm({
-        values: {
-          province: response.data.province,
-          city: response.data.city,
-          postal_code: response.data.postal_code,
-          street: response.data.street,
-          department: response.data.department || '',
-          additional_info: response.data.additional_info || '',
-        },
-      })
-    }
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Error al obtener la dirección', errors)
-  }
-}
 
 const handleLogout = () => {
   authStore.logout()
   router.push('/')
 }
 
-const loadData = async () => {
-  loading.value = true
-  try {
-    await getInfo()
-    await getAddress()
-  } catch (error) {
-    router.push('/login')
-  } finally {
-    loading.value = false
+const nextPage = () => {
+  if (hasNextPage) {
+    fetchNextPage()
   }
 }
 
-onMounted(() => {
-  loadData()
-})
+watch(
+  userInfoData,
+  (newData) => {
+    if (!newData) return
+    resetInfoForm({
+      values: {
+        username: newData.username,
+        email: newData.email,
+        phone_number: newData.phone_number || '',
+      },
+    })
+    hasGoogleId.value = !!newData.has_google_id
+  },
+  { immediate: true },
+)
+
+watch(
+  userAddressData,
+  (newData) => {
+    if (!newData) return
+    resetAddressForm({
+      values: {
+        province: newData.province,
+        city: newData.city,
+        postal_code: newData.postal_code,
+        street: newData.street,
+        department: newData.department || '',
+        additional_info: newData.additional_info || '',
+      },
+    })
+  },
+  { immediate: true },
+)
 </script>

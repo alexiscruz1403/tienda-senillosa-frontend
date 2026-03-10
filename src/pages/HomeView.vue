@@ -65,15 +65,9 @@
         <div class="overflow-hidden">
           <div
             class="grid grid-flow-col auto-cols-[100%] sm:auto-cols-[33.3333%] lg:auto-cols-[25%] transition-transform duration-500 ease-in-out"
-            ref="productsCarousel"
-            v-if="loading"
+            v-if="isLoading"
           >
-            <div class="px-2" v-for="n in 10" :key="n">
-              <v-skeleton-loader
-                type="image, list-item-three-line"
-                class="w-full h-96 flex items-start!"
-              />
-            </div>
+            <product-card-skeleton :quantity="4" />
           </div>
           <div
             class="grid grid-flow-col auto-cols-[100%] sm:auto-cols-[33.3333%] lg:auto-cols-[25%] transition-transform duration-500 ease-in-out"
@@ -92,7 +86,6 @@
                     : ''
                 "
                 :discount="product.discount"
-                @like="handleLikeClick"
                 :isLiked="product.is_liked"
               />
             </div>
@@ -189,10 +182,10 @@
   </app-layout>
 </template>
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
 import AppLayout from '@/layout/AppLayout.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ProductCardSkeleton from '@/components/skeletons/ProductCardSkeleton.vue'
 import {
   ChevronLeft,
   ChevronRight,
@@ -202,21 +195,16 @@ import {
   Shield,
   RefreshCcw,
 } from 'lucide-vue-next'
-import { likeProduct } from '@/services/likeService'
-import { type PublicProduct, getFeaturedProducts } from '@/services/productService'
-import { useAuthStore } from '@/stores/authStore'
-import { storeToRefs } from 'pinia'
-import router from '@/router'
+import { ref, onMounted } from 'vue'
 import { useAlert } from '@/composables/useAlert'
-import { handleApiError } from '@/utils/apiUtils'
+import { useFeaturedProductsQuery } from '@/queries/product.query'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
 
-const loading = ref<boolean>(true)
-const featuredProducts = ref<Array<PublicProduct>>([])
+const featuredProductsQuery = useFeaturedProductsQuery()
+const { data: featuredProducts, isLoading } = featuredProductsQuery
+useQueryErrorHandler(featuredProductsQuery)
 
-const authStore = useAuthStore()
-const { isAuthenticated } = storeToRefs(authStore)
-
-const { alertMessage, alertTitle, alertType, showAlert, displayAlertError } = useAlert()
+const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
 const getItemsPerPage = () => {
   if (window.innerWidth >= 1024) return 4 // lg
@@ -255,62 +243,6 @@ const disableNextButton = () => {
   return lastDisplayedItem.value >= totalItems.value
 }
 
-const handleLikeClick = async (productId: number) => {
-  if (!isAuthenticated.value) {
-    router.push('/login')
-    return
-  }
-
-  featuredProducts.value = featuredProducts.value.map((product) => {
-    if (product.product_id === productId) {
-      return {
-        ...product,
-        is_liked: !product.is_liked,
-      }
-    }
-    return product
-  })
-
-  try {
-    await likeProduct(productId)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al darle Me Gusta al producto', errors)
-    featuredProducts.value = featuredProducts.value.map((product) => {
-      if (product.product_id === productId) {
-        return {
-          ...product,
-          is_liked: !product.is_liked,
-        }
-      }
-      return product
-    })
-  }
-}
-
-const fetchFeaturedProducts = async () => {
-  try {
-    const featuredProductsResponse = await getFeaturedProducts()
-    featuredProducts.value = featuredProductsResponse.data
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al obtener los productos detacados', errors)
-  } finally {
-    loading.value = false
-  }
-}
-
-const validateUserToken = async () => {
-  if (isAuthenticated.value) {
-    try {
-      await authStore.validateUserToken()
-    } catch (error) {
-      console.error('Token validation failed:', error)
-      authStore.logout()
-    }
-  }
-}
-
 onMounted(() => {
   window.addEventListener('resize', () => {
     // Reset carousel position on resize
@@ -319,12 +251,5 @@ onMounted(() => {
       productsCarousel.value.style.transform = `translateX(0%)`
     }
   })
-
-  fetchFeaturedProducts()
-  validateUserToken()
-})
-
-watch(featuredProducts, (newProducts) => {
-  totalItems.value = newProducts.length
 })
 </script>

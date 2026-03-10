@@ -1,4 +1,4 @@
-import { getData, postData, putData, type ApiResponse } from './api'
+import { getData, postData, putData } from './api.service'
 
 export interface User {
   username: string
@@ -51,28 +51,24 @@ export interface PasswordFormPayload {
   confirm_password: string
 }
 
-export const getUserInfo = async (): Promise<ApiResponse<User>> => {
-  return await getData<User>('/user/info')
+export const getUserInfo = async (): Promise<User> => {
+  return await getData<User>('/user/info').then((r) => r.data)
 }
 
-export const updateUserInfo = async (
-  payload: InfoFormPayload,
-): Promise<ApiResponse<InfoFormResponse>> => {
-  return await putData<InfoFormResponse>('/user/info', payload)
+export const updateUserInfo = async (payload: InfoFormPayload): Promise<InfoFormResponse> => {
+  return await putData<InfoFormResponse>('/user/info', payload).then((r) => r.data)
 }
 
-export const getUserAddress = async (): Promise<ApiResponse<Address>> => {
-  return await getData<Address>('/user/address')
+export const getUserAddress = async (): Promise<Address> => {
+  return await getData<Address>('/user/address').then((r) => r.data)
 }
 
 export const updateUserAddress = async (
   payload: AddressFormPayload,
-): Promise<ApiResponse<AddressFormResponse>> => {
-  return await postData<AddressFormResponse>('/user/address', payload)
+): Promise<AddressFormResponse> => {
+  return await postData<AddressFormResponse>('/user/address', payload).then((r) => r.data)
 }
 
-export const updateUserPassword = async (
-  payload: PasswordFormPayload,
-): Promise<ApiResponse<null>> => {
-  return await postData<null>('/user/change_password', payload)
+export const updateUserPassword = async (payload: PasswordFormPayload): Promise<null> => {
+  return await postData<null>('/user/change_password', payload).then((r) => r.data)
 }

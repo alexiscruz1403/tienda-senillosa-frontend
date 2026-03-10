@@ -1,5 +1,5 @@
-import { getData, postData } from './api'
-import { type ApiResponse } from './api'
+import { getData, postData } from './api.service'
+import { type ApiResponse } from './api.service'
 
 export interface ValidateTokenResponse {
   valid: boolean

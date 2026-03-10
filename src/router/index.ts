@@ -6,11 +6,11 @@ import AuthError from '@/pages/auth/AuthError.vue'
 import HomeView from '@/pages/HomeView.vue'
 import ProductDetailView from '@/pages/products/ProductDetailView.vue'
 import CatalogView from '@/pages/products/CatalogView.vue'
-import LikesView from '@/pages/products/LikesView.vue'
-import CartView from '@/pages/products/CartView.vue'
+import LikesView from '@/pages/likes/LikesView.vue'
+import CartView from '@/pages/cart/CartView.vue'
 import ProfileView from '@/pages/profile/ProfileView.vue'
+import OrderView from '@/pages/orders/OrderView.vue'
 import { useAuthStore } from '@/stores/authStore'
-import { useUiStore } from '@/stores/uiStore'
 import { storeToRefs } from 'pinia'
 
 const router = createRouter({
@@ -69,31 +69,20 @@ const router = createRouter({
       component: ProfileView,
       meta: { requiresAuth: true },
     },
+    {
+      path: '/orders/:id',
+      name: 'order',
+      component: OrderView,
+    },
   ],
 })
 
 router.beforeEach(async (to, from, next) => {
-  if (to.meta.requiresAuth) {
-    const authStore = useAuthStore()
-    const uiStore = useUiStore()
-    uiStore.setLoading(true)
+  const authStore = useAuthStore()
+  const { isAuthenticated } = storeToRefs(authStore)
 
-    const { isAuthenticated } = storeToRefs(authStore)
-
-    if (!isAuthenticated.value) {
-      uiStore.setLoading(false)
-      return next({ name: 'login' })
-    }
-
-    try {
-      await authStore.validateUserToken()
-      next()
-    } catch (error) {
-      console.error('Authentication check failed:', error)
-      next({ name: 'login' })
-    } finally {
-      uiStore.setLoading(false)
-    }
+  if (to.meta.requiresAuth && !isAuthenticated.value) {
+    return next({ name: 'login' })
   } else {
     next()
   }

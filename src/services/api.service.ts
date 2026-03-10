@@ -1,4 +1,6 @@
 import axios, { type AxiosResponse } from 'axios'
+import router from '@/router'
+import { useAuthStore } from '@/stores/authStore'
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api',
@@ -7,6 +9,28 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
+api.interceptors.response.use(
+  (response) => response,
+
+  async (error) => {
+    const status = error.response?.status
+
+    switch (status) {
+      case 401:
+        const authStore = useAuthStore()
+        authStore.logout()
+        router.push('/login')
+        break
+
+      case 404:
+        router.push('/404')
+        break
+    }
+
+    return Promise.reject(error)
+  },
+)
 
 interface AuthToken {
   token: string
@@ -39,7 +63,7 @@ export const getData = async <T>(
   }
 }
 
-export const postData = async <T>(endpoint: string, data: unknown): Promise<ApiResponse<T>> => {
+export const postData = async <T>(endpoint: string, data: any): Promise<ApiResponse<T>> => {
   const token = localStorage.getItem('authToken')
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
@@ -48,7 +72,7 @@ export const postData = async <T>(endpoint: string, data: unknown): Promise<ApiR
   return response.data
 }
 
-export const putData = async <T>(endpoint: string, data: unknown): Promise<ApiResponse<T>> => {
+export const putData = async <T>(endpoint: string, data: any): Promise<ApiResponse<T>> => {
   const token = localStorage.getItem('authToken')
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`

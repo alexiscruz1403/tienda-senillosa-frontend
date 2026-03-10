@@ -8,41 +8,7 @@
           { title: 'Detalle del Producto', href: '/products/', disabled: true },
         ]"
       />
-
-      <section class="flex flex-col lg:flex-row px-4 py-4" v-if="loading">
-        <div
-          class="h-96 md:h-screen w-full lg:w-5xl bg-black/12 animate-pulse relative rounded-2xl"
-        ></div>
-        <div class="flex flex-col gap-4 mt-8 md:mt-0 w-full">
-          <div class="flex flex-col gap-2">
-            <v-skeleton-loader type="heading" class="w-1/3 h-8" color="transparent" />
-            <v-skeleton-loader type="heading" class="w-2/3 h-10" color="transparent" />
-          </div>
-          <v-skeleton-loader type="paragraph" class="w-full h-20" color="transparent" />
-          <div class="flex flex-col gap-6">
-            <div class="flex flex-col gap-2">
-              <v-skeleton-loader type="heading" class="w-1/4 h-6" color="transparent" />
-              <div class="flex gap-1">
-                <v-skeleton-loader
-                  type="button"
-                  class="size-20"
-                  v-for="n in 4"
-                  :key="n"
-                  color="transparent"
-                />
-              </div>
-            </div>
-            <div class="flex flex-col gap-2">
-              <v-skeleton-loader type="heading" class="w-1/4 h-6" color="transparent" />
-              <v-skeleton-loader type="button" class="w-40 h-10" color="transparent" />
-            </div>
-            <div class="flex gap-2">
-              <v-skeleton-loader type="button" class="w-40 h-12" color="transparent" />
-              <v-skeleton-loader type="button" class="w-40 h-12" color="transparent" />
-            </div>
-          </div>
-        </div>
-      </section>
+      <product-detail-skeleton v-if="isFetching" />
       <section class="flex flex-col lg:flex-row gap-2 px-4 py-4" v-else>
         <div class="flex flex-col gap-4 md:gap-2 relative">
           <img
@@ -117,7 +83,7 @@
             <div class="flex flex-col gap-2" v-if="selectedSize">
               <h3 class="font-semibold text-lg">Cantidad</h3>
               <item-counter
-                :model-value="modelValue"
+                :model-value="quantity"
                 :max="maxQuantity"
                 @update="handleQuantityUpdate"
               />
@@ -139,7 +105,7 @@
                 variant="outlined"
                 size="large"
                 :color="getLikeButtonColor()"
-                @click="handleLikeClick"
+                @click="handleLikeClick(Number(product?.product_id))"
               >
                 <Heart :size="20" :color="getHeartColor()" :fill="getHeartFill()" />
               </v-btn>
@@ -154,15 +120,9 @@
         </h2>
         <div
           class="grid grid-cols-2 gap-y-4 md:grid-cols-3 lg:grid-cols-4"
-          ref="productsCarousel"
-          v-if="loadingRelated"
+          v-if="isFetchingRelated"
         >
-          <div class="px-2" v-for="n in 4" :key="n">
-            <v-skeleton-loader
-              type="image, list-item-three-line"
-              class="w-full h-96 flex items-start!"
-            />
-          </div>
+          <product-card-skeleton :quantity="4" />
         </div>
         <div
           class="grid grid-cols-2 gap-y-4 md:grid-cols-3 lg:grid-cols-4"
@@ -181,7 +141,6 @@
                   : ''
               "
               :discount="product.discount"
-              @like="handleRelatedProductLikeClick(product.product_id)"
               :isLiked="product.is_liked"
             />
           </div>
@@ -202,31 +161,44 @@ import SizeButton from '@/components/SizeButton.vue'
 import ItemCounter from '@/components/ItemCounter.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import AppAlert from '@/components/AppAlert.vue'
+import ProductCardSkeleton from '@/components/skeletons/ProductCardSkeleton.vue'
+import ProductDetailSkeleton from '@/components/skeletons/ProductDetailSkeleton.vue'
 import { ChevronLeft, ChevronRight, Heart, ShoppingBag } from 'lucide-vue-next'
-import router from '@/router'
-import { getProductById, getRelatedProducts, type PublicProduct } from '@/services/productService'
-import { likeProduct } from '@/services/likeService'
-import { ref, onMounted, computed, watch } from 'vue'
-import { useCartStore } from '@/stores/cartStore'
-import { type CartItemPayload, addProductToCart } from '@/services/cartService'
+import { useProductQuery, useRelatedProductsQuery } from '@/queries/product.query'
+import { ref, computed } from 'vue'
 import { useAlert } from '@/composables/useAlert'
-import { handleApiError } from '@/utils/apiUtils'
+import { useRoute } from 'vue-router'
+import { useLikeProductMutation } from '@/mutations/like.mutations'
+import { useAddToCartMutation } from '@/mutations/cart.mutation'
+import { useQueryErrorHandler } from '@/composables/useQueryErrorHandler'
+import { useMutationErrorHandler } from '@/composables/useMutationErrorHandler'
 
-const loading = ref<boolean>(true)
-const product = ref<PublicProduct | null>(null)
-const loadingRelated = ref<boolean>(true)
-const relatedProducts = ref<PublicProduct[]>([])
+const route = useRoute()
+const productId = computed(() => Number(route.params.id))
+
+const productQuery = useProductQuery(productId)
+const { data: product, isFetching } = productQuery
+useQueryErrorHandler(productQuery)
+
+const relatedProductsQuery = useRelatedProductsQuery(productId)
+const { data: relatedProducts, isFetching: isFetchingRelated } = relatedProductsQuery
+useQueryErrorHandler(relatedProductsQuery)
+
+const likesMutation = useLikeProductMutation()
+const { mutate: likeProduct } = likesMutation
+useMutationErrorHandler(likesMutation)
+
+const addToCartMutation = useAddToCartMutation()
+const { mutate: addToCart } = addToCartMutation
+useMutationErrorHandler(addToCartMutation)
 
 const selectedImageIndex = ref<number>(0)
 
 const selectedSize = ref<string | null>(null)
 const maxQuantity = ref<number>(0)
-const modelValue = ref<number>(1)
+const quantity = ref<number>(1)
 
-const { alertMessage, alertTitle, alertType, showAlert, displayAlertError, displayAlertSuccess } =
-  useAlert()
-
-const cartStore = useCartStore()
+const { alertMessage, alertTitle, alertType, showAlert } = useAlert()
 
 const isNew = (): boolean => {
   if (!product.value) return false
@@ -279,7 +251,30 @@ const handleSizeClick = (size: string) => {
 }
 
 const handleQuantityUpdate = (newValue: number) => {
-  modelValue.value = newValue
+  quantity.value = newValue
+}
+
+const handleLikeClick = async (productId: number) => {
+  likeProduct(productId)
+}
+
+const handleCartClick = () => {
+  if (!product.value || !selectedSize.value || !quantity.value) return
+
+  addToCart({
+    product: {
+      product_id: product.value.product_id,
+      brand: product.value.brand,
+      name: product.value.name,
+      price: product.value.price,
+      discount: product.value.discount,
+      images: product.value.images,
+    },
+    stock: {
+      size: selectedSize.value,
+    },
+    product_quantity: quantity.value,
+  })
 }
 
 const getLikeButtonColor = (): string => {
@@ -299,98 +294,6 @@ const getHeartFill = (): string => {
 
   return product.value.is_liked ? '#3C83F6' : 'transparent'
 }
-
-const handleLikeClick = async () => {
-  if (!product.value) return
-
-  const currentLikeStatus = product.value.is_liked
-
-  try {
-    product.value.is_liked = !currentLikeStatus
-    await likeProduct(product.value.product_id)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al dar Me Gusta al producto', errors)
-    product.value.is_liked = currentLikeStatus
-  }
-}
-
-const handleRelatedProductLikeClick = async (productId: number) => {
-  const relatedProduct = relatedProducts.value.find((p) => p.product_id === productId)
-  if (!relatedProduct) return
-
-  const currentLikeStatus = relatedProduct.is_liked
-
-  try {
-    relatedProduct.is_liked = !currentLikeStatus
-    await likeProduct(relatedProduct.product_id)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al dar Me Gusta al producto', errors)
-    relatedProduct.is_liked = currentLikeStatus
-  }
-}
-
-const handleCartClick = async () => {
-  if (!product.value || !selectedSize.value) return
-
-  try {
-    const cartItem: CartItemPayload = {
-      product: {
-        product_id: product.value.product_id,
-        brand: product.value.brand,
-        name: product.value.name,
-        price: product.value.price,
-        discount: product.value.discount,
-        images: product.value.images,
-      },
-      quantity: modelValue.value,
-      size: selectedSize.value,
-    }
-    cartStore.addItem(cartItem)
-    displayAlertSuccess(
-      'Producto añadido al carrito',
-      `${cartItem.product.name} Talle ${cartItem.size} x ${cartItem.quantity}`,
-    )
-    await addProductToCart(cartItem)
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al agregar el producto al carrito', errors)
-  }
-}
-
-const getProduct = async () => {
-  const productId = router.currentRoute.value.params.id
-  const numberedProductId: number = Number(productId) ?? 0
-
-  if (numberedProductId === 0) router.push('/products')
-
-  try {
-    const productResponse = await getProductById(numberedProductId)
-    product.value = productResponse.data
-    const relatedProductsResponse = await getRelatedProducts(numberedProductId)
-    relatedProducts.value = relatedProductsResponse.data
-  } catch (error) {
-    const errors = handleApiError(error)
-    displayAlertError('Ocurrió un error al obtener el producto', errors)
-  } finally {
-    loading.value = false
-    loadingRelated.value = false
-  }
-}
-
-onMounted(async () => {
-  getProduct()
-})
-
-watch(
-  () => router.currentRoute.value.params.id,
-  () => {
-    loading.value = true
-    loadingRelated.value = true
-    getProduct()
-  },
-)
 
 const discountedPrice = computed(() => {
   if (product.value && product.value.discount) {
